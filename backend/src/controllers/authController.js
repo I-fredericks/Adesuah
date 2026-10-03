@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
 const { uniqueSlug, seedSchoolDefaults } = require('../services/onboardingService');
 const { getUserPermissions } = require('../services/permissionService');
+const { audit } = require('../services/auditService');
 const { normalizeRole } = require('../utils/permissions');
 
 const signToken = (user) =>
@@ -159,6 +160,33 @@ const changePassword = async (req, res) => {
   res.json({ message: 'Password changed. Please sign in again.' });
 };
 
+const updateProfile = async (req, res) => {
+  const { name, avatarUrl } = req.body;
+  if (avatarUrl && avatarUrl.length > 1_500_000) {
+    return res.status(400).json({ message: 'Image is too large — please choose a smaller photo' });
+  }
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: {
+      ...(name ? { name } : {}),
+      ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl || null } : {}),
+    },
+  });
+
+  audit({
+    schoolId: user.schoolId || 0,
+    userId: user.id,
+    action: 'PROFILE_UPDATE',
+    entity: 'user',
+    entityId: user.id,
+    after: { name: user.name, avatarChanged: avatarUrl !== undefined },
+  });
+
+  res.json({
+    user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, avatarUrl: user.avatarUrl },
+  });
+};
+
 const forgotPassword = async (req, res) => {
   res.status(503).json({
     message:
@@ -166,4 +194,4 @@ const forgotPassword = async (req, res) => {
   });
 };
 
-module.exports = { registerSchool, login, me, changePassword, forgotPassword };
+module.exports = { registerSchool, login, me, updateProfile, changePassword, forgotPassword };

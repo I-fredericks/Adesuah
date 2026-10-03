@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, ErrorNote } from '../components/ui';
+import { PageHeader, Spinner, ErrorNote, EmptyState } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
-const TABS = ['Classes', 'Subjects', 'Assessment Types', 'Grading', 'Academic Year'];
+const TABS = ['Classes', 'Subjects', 'Teacher Allocation', 'Assessment Types', 'Grading', 'Academic Year'];
 
 const Academics = () => {
   const { can } = useAuth();
@@ -216,36 +216,205 @@ const Academics = () => {
         </div>
       )}
 
+      {tab === 'Teacher Allocation' && (
+        <TeacherAllocation classes={classes} canManage={can('academics.manage')} />
+      )}
+
       {tab === 'Academic Year' && (
-        <div className="space-y-4">
-          {years.map((y) => (
-            <div key={y.id} className="card p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <h2 className="font-semibold">{y.name}</h2>
-                {y.isCurrent && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Current</span>}
-                {can('academics.manage') && !y.isCurrent && (
-                  <button className="text-xs text-brand-600 hover:underline" onClick={() => setCurrentYear.mutate(y.id)}>
-                    Set current
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {y.terms.map((t) => (
-                  <div key={t.id} className={`rounded-lg border p-3 text-sm ${t.isCurrent ? 'border-brand-500 bg-brand-50' : 'border-slate-200'}`}>
-                    <p className="font-medium">{t.name.replace('TERM_', 'Term ')}</p>
-                    <p className="text-xs text-slate-500">{new Date(t.startDate).toLocaleDateString()} – {new Date(t.endDate).toLocaleDateString()}</p>
-                    {can('academics.manage') && !t.isCurrent && (
-                      <button className="mt-1 text-xs text-brand-600 hover:underline" onClick={() => setCurrentTerm.mutate(t.id)}>
-                        Set current
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+        <TermCalendar years={years} canManage={can('academics.manage')} setCurrentYear={setCurrentYear} setCurrentTerm={setCurrentTerm} />
+      )}
+    </div>
+  );
+};
+
+const TeacherAllocation = ({ classes, canManage }) => {
+  const queryClient = useQueryClient();
+  const [classId, setClassId] = useState(classes[0]?.id || '');
+  const [alloc, setAlloc] = useState({});
+  const [bulkTeacher, setBulkTeacher] = useState('');
+  const [msg, setMsg] = useState('');
+
+  const { data: csData, isLoading } = useQuery({
+    queryKey: ['classSubjects', classId],
+    queryFn: () => api.get('/academic/class-subjects', { params: { classId } }).then((r) => r.data),
+    enabled: !!classId,
+  });
+  const { data: staffData } = useQuery({
+    queryKey: ['staff'],
+    queryFn: () => api.get('/staff').then((r) => r.data),
+  });
+
+  const save = useMutation({
+    mutationFn: (subjects) => api.put('/academic/class-subjects', { classId: Number(classId), subjects }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classSubjects', classId] });
+      setMsg('Teacher allocation saved.');
+      setTimeout(() => setMsg(''), 3000);
+    },
+  });
+
+  const staff = (staffData?.staff || []).filter((s) => s.isActive);
+  const current = {};
+  (csData?.classSubjects || []).forEach((cs) => {
+    current[cs.subject.id] = cs.teacher?.id || '';
+  });
+
+  const teacherFor = (subjectId) => alloc[subjectId] ?? current[subjectId] ?? '';
+
+  const buildPayload = () =>
+    (csData?.classSubjects || []).map((cs) => ({
+      subjectId: cs.subject.id,
+      teacherId: Number(teacherFor(cs.subject.id)) || null,
+    }));
+
+  if (!classes.length) return <EmptyState message="No classes yet" />;
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <select className="input max-w-52" value={classId} onChange={(e) => { setClassId(e.target.value); setAlloc({}); }}>
+          {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        {canManage && (
+          <div className="flex items-center gap-2">
+            <select className="input max-w-56" value={bulkTeacher} onChange={(e) => setBulkTeacher(e.target.value)}>
+              <option value="">Assign one teacher to ALL subjects…</option>
+              {staff.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.role.replace('_', ' ')})</option>)}
+            </select>
+            {bulkTeacher && (
+              <button
+                className="btn-secondary"
+                onClick={() => setAlloc(Object.fromEntries((csData?.classSubjects || []).map((cs) => [cs.subject.id, bulkTeacher])))}
+              >
+                Apply to all
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {msg && <p className="mb-3 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">{msg}</p>}
+      {isLoading || !csData ? (
+        <Spinner className="mx-auto h-8 w-8" />
+      ) : csData.classSubjects.length === 0 ? (
+        <EmptyState message="This class has no subjects linked" />
+      ) : (
+        <div className="card max-w-2xl divide-y divide-slate-100">
+          {csData.classSubjects.map((cs) => (
+            <div key={cs.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
+              <span className="font-medium">{cs.subject.name}</span>
+              {canManage ? (
+                <select
+                  className="input w-56"
+                  value={teacherFor(cs.subject.id)}
+                  onChange={(e) => setAlloc((a) => ({ ...a, [cs.subject.id]: e.target.value }))}
+                >
+                  <option value="">— Not assigned —</option>
+                  {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              ) : (
+                <span className="text-slate-500">{cs.teacher?.name || 'Not assigned'}</span>
+              )}
             </div>
           ))}
+          {canManage && (
+            <div className="p-4">
+              <button className="btn-primary" onClick={() => save.mutate(buildPayload())} disabled={save.isPending}>
+                {save.isPending ? 'Saving…' : 'Save allocation'}
+              </button>
+              <p className="mt-2 text-xs text-slate-400">
+                Assigned teachers can only enter scores and give homework for their own subjects and classes.
+              </p>
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+};
+
+const TermCalendar = ({ years, canManage, setCurrentYear, setCurrentTerm }) => {
+  const queryClient = useQueryClient();
+  const [edits, setEdits] = useState({});
+  const [msg, setMsg] = useState('');
+
+  const updateTerm = useMutation({
+    mutationFn: ({ id, data }) => api.put(`/academic/terms/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['years'] });
+      setMsg('Term calendar updated — parents and report cards use these dates.');
+      setTimeout(() => setMsg(''), 4000);
+    },
+  });
+
+  const field = (t, k, type = 'date', label) => (
+    <div>
+      <label className="label">{label}</label>
+      <input
+        className="input"
+        type={type}
+        value={(edits[t.id]?.[k] ?? (t[k] ? new Date(t[k]).toISOString().slice(0, 10) : ''))}
+        disabled={!canManage}
+        onChange={(e) => setEdits((E) => ({ ...E, [t.id]: { ...E[t.id], [k]: e.target.value } }))}
+      />
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {msg && <p className="rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">{msg}</p>}
+      {!canManage && (
+        <p className="rounded-lg bg-slate-100 px-4 py-2 text-sm text-slate-500">
+          Only the proprietor or headteacher can change the term calendar.
+        </p>
+      )}
+      {years.map((y) => (
+        <div key={y.id} className="card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <h2 className="font-semibold">{y.name}</h2>
+            {y.isCurrent && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Current</span>}
+            {canManage && !y.isCurrent && (
+              <button className="text-xs text-brand-600 hover:underline" onClick={() => setCurrentYear.mutate(y.id)}>
+                Set current
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {y.terms.map((t) => {
+              const isEditing = edits[t.id] && Object.keys(edits[t.id]).length > 0;
+              return (
+                <div key={t.id} className={`rounded-lg border p-4 text-sm ${t.isCurrent ? 'border-brand-500' : 'border-slate-200'}`}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="font-semibold">{t.name.replace('TERM_', 'Term ')}</p>
+                    <div className="flex items-center gap-2">
+                      {t.isCurrent && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Current</span>}
+                      {canManage && !t.isCurrent && (
+                        <button className="text-xs text-brand-600 hover:underline" onClick={() => setCurrentTerm.mutate(t.id)}>
+                          Set current
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {field(t, 'startDate', 'date', 'School re-opens')}
+                    {field(t, 'endDate', 'date', 'Term ends / vacates')}
+                    {field(t, 'vacationDate', 'date', 'Vacation date')}
+                    {field(t, 'nextTermBegins', 'date', 'Next term begins')}
+                  </div>
+                  {canManage && isEditing && (
+                    <button
+                      className="btn-primary mt-3 w-full"
+                      disabled={updateTerm.isPending}
+                      onClick={() => updateTerm.mutate({ id: t.id, data: edits[t.id] })}
+                    >
+                      {updateTerm.isPending ? 'Saving…' : 'Save term calendar'}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

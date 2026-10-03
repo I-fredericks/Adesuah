@@ -321,6 +321,48 @@ const installmentsSchema = z.object({
     .min(1, 'At least one instalment is required'),
 });
 
+const profileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+  avatarUrl: z.string().max(1_500_000, 'Image is too large').optional(),
+});
+
+const salarySchema = z.object({
+  userId: z.number().int(),
+  period: z.string().regex(/^\d{4}-\d{2}$/, 'Period must be in YYYY-MM format'),
+  amount: z.number().positive('Amount must be greater than zero'),
+  method: z.enum(['CASH', 'MOMO', 'BANK', 'CHEQUE', 'OTHER']).optional(),
+  reference: z.string().optional(),
+  note: z.string().optional(),
+  paidAt: z.string().optional(),
+});
+
+const extraClassSchema = z.object({
+  title: z.string().min(2, 'Title is required'),
+  classId: z.number().int(),
+  subjectId: z.number().int().optional().nullable(),
+  teacherId: z.number().int().optional().nullable(),
+  days: z.string().min(1, 'Days are required, e.g. Mon,Tue,Wed'),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be HH:MM'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be HH:MM'),
+  venue: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional().nullable(),
+  notes: z.string().optional(),
+});
+
+const extraClassStatusSchema = z.object({
+  status: z.enum(['ACTIVE', 'PAUSED', 'ENDED']),
+});
+
+const assignmentSchema = z.object({
+  classId: z.number().int(),
+  subjectId: z.number().int().optional().nullable(),
+  termId: z.number().int(),
+  title: z.string().min(2, 'Title is required'),
+  description: z.string().optional(),
+  dueDate: z.string().optional().nullable(),
+});
+
 const promoteSchema = z.object({
   classId: z.number().int(),
   toClassId: z.number().int().optional(),
@@ -388,6 +430,11 @@ module.exports = {
   reportsLockSchema,
   staffAttendanceMarkSchema,
   installmentsSchema,
+  profileSchema,
+  salarySchema,
+  extraClassSchema,
+  extraClassStatusSchema,
+  assignmentSchema,
   promoteSchema,
   platformSchoolSchema,
   platformStatusSchema,

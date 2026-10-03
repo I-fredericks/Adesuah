@@ -59,6 +59,9 @@ model School {
   auditLogs       AuditLog[]
   corrections     ResultCorrection[]
   staffAttendance StaffAttendance[]
+  salaryPayments  SalaryPayment[]
+  extraClasses    ExtraClass[]
+  assignments     Assignment[]
 
   @@map("school")
 }
@@ -71,6 +74,7 @@ model User {
   phone          String? @unique
   password       String
   name           String
+  avatarUrl      String?
   role           Role    @default(TEACHER)
   isActive       Boolean @default(true)
   lastLoginAt    DateTime?
@@ -90,10 +94,16 @@ model User {
   classesLed        SchoolClass[]
   lockedReportCards ReportCard[]   @relation("ReportCardLocker")
   auditLogs         AuditLog[]
+  salaryPayments    SalaryPayment[]
+  salariesRecorded  SalaryPayment[] @relation("SalaryRecorder")
+  extraClassesTaught ExtraClass[]
+  assignmentsGiven  Assignment[]
   correctionsRequested ResultCorrection[] @relation("CorrectionRequester")
   correctionsDecided   ResultCorrection[] @relation("CorrectionDecider")
   staffAttendance      StaffAttendance[]
   staffAttendanceMarked StaffAttendance[] @relation("StaffAttendanceMarker")
+  extraClassesCreated  ExtraClass[]      @relation("ExtraClassCreator")
+  assignmentsCreated   Assignment[]      @relation("AssignmentCreator")
 
   @@index([schoolId, role])
   @@map("user")
@@ -284,6 +294,7 @@ model Term {
   reportCards   ReportCard[]
   invoices      Invoice[]
   corrections   ResultCorrection[]
+  assignments   Assignment[]
 
   @@unique([academicYearId, name])
   @@index([schoolId, isCurrent])
@@ -342,6 +353,8 @@ model SchoolClass {
   attendance     AttendanceRecord[]
   scores         Score[]
   announcements  Announcement[]
+  extraClasses   ExtraClass[]
+  assignments    Assignment[]
   @@unique([schoolId, name])
   @@index([schoolId, levelId])
   @@map("schoolclass")
@@ -361,6 +374,8 @@ model Subject {
   classSubjects ClassSubject[]
   scores        Score[]
   corrections   ResultCorrection[]
+  extraClasses  ExtraClass[]
+  assignments   Assignment[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -820,4 +835,96 @@ model Notification {
   @@index([userId, createdAt])
   @@index([userId, readAt])
   @@map("notification")
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Payroll, extra classes, assignments
+// ────────────────────────────────────────────────────────────────────────
+
+// Light payroll: one salary record per staff per period (e.g. "2026-10").
+// Staff see their own records; finance/head see everyone's.
+model SalaryPayment {
+  id           Int           @id @default(autoincrement())
+  schoolId     Int
+  school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  userId       Int
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  period       String
+  amount       Decimal       @db.Decimal(12, 2)
+  method       PaymentMethod @default(MOMO)
+  reference    String?
+  note         String?
+  paidAt       DateTime      @default(now())
+  recordedById Int?
+  recordedBy   User?         @relation("SalaryRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, period])
+  @@index([schoolId, period])
+  @@map("salarypayment")
+}
+
+// Head-managed extra classes (e.g. morning classes): can be modified,
+// paused or terminated at any time.
+model ExtraClass {
+  id          Int               @id @default(autoincrement())
+  schoolId    Int
+  school      School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  title       String
+  classId     Int
+  class       SchoolClass       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId   Int?
+  subject     Subject?          @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  teacherId   Int?
+  teacher     User?             @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  days        String
+  startTime   String
+  endTime     String
+  venue       String?
+  startDate   DateTime          @default(now())
+  endDate     DateTime?
+  status      ExtraClassStatus  @default(ACTIVE)
+  notes       String?
+  createdById Int?
+  createdBy   User?             @relation("ExtraClassCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, status])
+  @@map("extraclass")
+}
+
+enum ExtraClassStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+// Homework / assignments given by teachers; visible to parents in the portal.
+model Assignment {
+  id           Int       @id @default(autoincrement())
+  schoolId     Int
+  school       School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classId      Int
+  class        SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId    Int?
+  subject      Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  teacherId    Int?
+  teacher      User?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  termId       Int
+  term         Term      @relation(fields: [termId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  dueDate      DateTime?
+  createdById  Int?
+  createdBy    User?     @relation("AssignmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, classId, termId])
+  @@map("assignment")
 }

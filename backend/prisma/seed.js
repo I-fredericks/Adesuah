@@ -409,6 +409,102 @@ const seed = async () => {
     ],
   });
 
+  console.log('Adding extra classes, assignments and salary records…');
+  await prisma.extraClass.createMany({
+    data: [
+      {
+        schoolId: school.id,
+        title: 'Morning Extra — Maths & Integrated Science',
+        classId: jhs1.id,
+        subjectId: subjectByCode.MATH.id,
+        teacherId: users.teacher1.id,
+        days: 'Mon,Tue,Wed,Thu',
+        startTime: '06:30',
+        endTime: '07:30',
+        venue: 'JHS Block',
+        startDate: daysAgo(21),
+        createdById: users.head.id,
+      },
+      {
+        schoolId: school.id,
+        title: 'Morning Extra — English Language',
+        classId: p6.id,
+        subjectId: subjectByCode.ENG.id,
+        teacherId: users.coordinator.id,
+        days: 'Tue,Thu',
+        startTime: '06:45',
+        endTime: '07:30',
+        venue: 'Primary Block',
+        startDate: daysAgo(14),
+        createdById: users.head.id,
+      },
+      {
+        schoolId: school.id,
+        title: 'BECE Mock Revision (JHS 3)',
+        classId: classes.find((c) => c.levelId === byName('JHS 3').id).id,
+        subjectId: subjectByCode.ENG.id,
+        teacherId: users.head.id,
+        days: 'Fri',
+        startTime: '14:00',
+        endTime: '16:00',
+        venue: 'JHS Block',
+        startDate: daysAgo(30),
+        status: 'PAUSED',
+        notes: 'Paused until mock fees are settled.',
+        createdById: users.head.id,
+      },
+    ],
+  });
+
+  await prisma.assignment.createMany({
+    data: [
+      {
+        schoolId: school.id,
+        classId: jhs1.id,
+        subjectId: subjectByCode.MATH.id,
+        teacherId: users.teacher1.id,
+        termId: term1.id,
+        title: 'Fractions exercise 4B',
+        description: 'Complete exercise 4B, questions 1–15, in your exercise book. Show all working.',
+        dueDate: daysAgo(-3),
+        createdById: users.teacher1.id,
+      },
+      {
+        schoolId: school.id,
+        classId: jhs1.id,
+        subjectId: subjectByCode.ENG.id,
+        teacherId: users.teacher1.id,
+        termId: term1.id,
+        title: 'Comprehension: “The Clever Fisherman”',
+        description: 'Answer questions 1–8 in your comprehension workbook.',
+        dueDate: daysAgo(-5),
+        createdById: users.teacher1.id,
+      },
+      {
+        schoolId: school.id,
+        classId: p4.id,
+        subjectId: subjectByCode.ENG.id,
+        teacherId: users.teacher2.id,
+        termId: term1.id,
+        title: 'Spelling list — Week 6',
+        description: 'Learn the 20 spelling words for Friday\'s dictation.',
+        dueDate: daysAgo(-2),
+        createdById: users.teacher2.id,
+      },
+    ],
+  });
+
+  await prisma.salaryPayment.createMany({
+    data: [
+      { schoolId: school.id, userId: users.teacher1.id, period: '2026-09', amount: 1800, method: 'MOMO', reference: 'SAL-SEP-005', recordedById: users.bursar.id },
+      { schoolId: school.id, userId: users.teacher1.id, period: '2026-10', amount: 1800, method: 'MOMO', reference: 'SAL-OCT-005', recordedById: users.bursar.id },
+      { schoolId: school.id, userId: users.teacher2.id, period: '2026-09', amount: 1600, method: 'BANK', reference: 'SAL-SEP-006', recordedById: users.bursar.id },
+      { schoolId: school.id, userId: users.teacher2.id, period: '2026-10', amount: 1600, method: 'BANK', reference: 'SAL-OCT-006', recordedById: users.bursar.id },
+      { schoolId: school.id, userId: users.head.id, period: '2026-09', amount: 3200, method: 'BANK', reference: 'SAL-SEP-002', recordedById: users.bursar.id },
+      { schoolId: school.id, userId: users.bursar.id, period: '2026-09', amount: 2200, method: 'BANK', reference: 'SAL-SEP-008', recordedById: users.owner.id },
+    ],
+  });
+
   const counts = {
     students: await prisma.student.count(),
     invoices: await prisma.invoice.count(),

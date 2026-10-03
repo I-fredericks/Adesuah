@@ -9,6 +9,7 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "seed": "node prisma/seed.js",
+    "backfill:perms": "node scripts/backfill-permissions.js",
     "postinstall": "prisma generate"
   },
   "prisma": {

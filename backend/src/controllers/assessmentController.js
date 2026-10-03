@@ -108,7 +108,28 @@ const saveScores = async (req, res) => {
     }
   }
 
-  // Audit trail: record every change to an existing score (before → after).
+  // Audit trail: record every change to an existing score (before → after)
+  // with subject/class/student context so heads can see who changed what, when.
+  const [subjectRow, classRow] = await Promise.all([
+    prisma.subject.findUnique({ where: { id: subjectId }, select: { name: true } }),
+    prisma.schoolClass.findUnique({ where: { id: classId }, select: { name: true } }),
+  ]);
+  const changedStudentIds = [
+    ...new Set(
+      entries
+        .filter((e) => e.rawScore !== null && e.rawScore !== undefined)
+        .map((e) => e.studentId)
+    ),
+  ];
+  const studentRows = await prisma.student.findMany({
+    where: { id: { in: changedStudentIds } },
+    select: { id: true, firstName: true, lastName: true, admissionNo: true },
+  });
+  const studentName = (id) => {
+    const s = studentRows.find((x) => x.id === id);
+    return s ? `${s.firstName} ${s.lastName} (${s.admissionNo})` : `student #${id}`;
+  };
+
   for (const e of entries) {
     if (e.rawScore === null || e.rawScore === undefined) continue;
     const existing = await prisma.score.findUnique({
@@ -129,8 +150,8 @@ const saveScores = async (req, res) => {
         action: 'SCORE_EDIT',
         entity: 'score',
         entityId: existing.id,
-        before: { rawScore: existing.rawScore },
-        after: { rawScore: e.rawScore },
+        before: { subject: subjectRow?.name, className: classRow?.name, student: studentName(e.studentId), rawScore: existing.rawScore },
+        after: { subject: subjectRow?.name, className: classRow?.name, student: studentName(e.studentId), rawScore: e.rawScore },
       });
     }
   }

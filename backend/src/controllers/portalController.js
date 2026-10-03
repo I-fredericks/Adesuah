@@ -138,6 +138,46 @@ const getChildReport = async (req, res) => {
   res.json({ reportCard });
 };
 
+// Homework/assignments for a child's class — so parents can verify what was given.
+const getChildAssignments = async (req, res) => {
+  const link = await prisma.guardian.findFirst({
+    where: { userId: req.user.id, studentId: Number(req.params.id) },
+    include: { student: { select: { currentClassId: true } } },
+  });
+  if (!link) return res.status(404).json({ message: 'Child not found' });
+
+  const assignments = await prisma.assignment.findMany({
+    where: { schoolId: req.user.schoolId, classId: link.student.currentClassId },
+    include: {
+      subject: { select: { name: true } },
+      teacher: { select: { name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  });
+  res.json({ assignments });
+};
+
+// Guardians may update their child's photo.
+const updateChildPhoto = async (req, res) => {
+  const { photoUrl } = req.body;
+  if (!photoUrl || photoUrl.length > 1_500_000) {
+    return res.status(400).json({ message: 'Image is too large — please choose a smaller photo' });
+  }
+  const link = await prisma.guardian.findFirst({
+    where: { userId: req.user.id, studentId: Number(req.params.id) },
+    select: { id: true },
+  });
+  if (!link) return res.status(404).json({ message: 'Child not found' });
+
+  const student = await prisma.student.update({
+    where: { id: Number(req.params.id) },
+    data: { photoUrl },
+    select: { id: true, photoUrl: true },
+  });
+  res.json({ student });
+};
+
 const getPortalAnnouncements = async (req, res) => {
   const childIds = (
     await prisma.guardian.findMany({
@@ -160,4 +200,4 @@ const getPortalAnnouncements = async (req, res) => {
   res.json({ announcements });
 };
 
-module.exports = { requireParent, getMyChildren, getChildDetail, getChildReport, getPortalAnnouncements };
+module.exports = { requireParent, getMyChildren, getChildDetail, getChildReport, getChildAssignments, updateChildPhoto, getPortalAnnouncements };

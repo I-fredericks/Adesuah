@@ -1,10 +1,125 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, X, RotateCcw } from 'lucide-react';
+import { Check, X, RotateCcw, Camera } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, Spinner, ErrorNote, Badge } from '../components/ui';
 import { ROLE_LABELS } from '../utils/format';
+import { PERMISSION_LABELS, resizeImage } from '../utils/permissions';
 import { useAuth } from '../context/AuthContext';
+
+const MyProfile = () => {
+  const { user, refreshUser } = useAuth();
+  const [name, setName] = useState(user?.name || '');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [error, setError] = useState('');
+
+  const upload = async (file) => {
+    try {
+      setError('');
+      const dataUrl = await resizeImage(file, 320);
+      await api.put('/auth/profile', { avatarUrl: dataUrl });
+      await refreshUser();
+      setMsg('Profile photo updated');
+      setTimeout(() => setMsg(''), 2500);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  };
+
+  const saveName = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      await api.put('/auth/profile', { name });
+      await refreshUser();
+      setMsg('Profile updated');
+      setTimeout(() => setMsg(''), 2500);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="card h-fit space-y-4 p-6">
+      <h2 className="font-semibold">My profile</h2>
+      {msg && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{msg}</p>}
+      <ErrorNote error={error ? { response: { data: { message: error } } } : null} />
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className="h-20 w-20 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-600 text-2xl font-bold text-white">
+              {(user?.name || '?').charAt(0)}
+            </div>
+          )}
+          <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white shadow ring-1 ring-slate-200 hover:bg-slate-50">
+            <Camera className="h-4 w-4 text-slate-600" />
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files[0] && upload(e.target.files[0])} />
+          </label>
+        </div>
+        <div>
+          <p className="font-semibold">{user?.name}</p>
+          <p className="text-sm text-slate-500">{ROLE_LABELS[user?.role] || user?.role}</p>
+          <p className="text-xs text-slate-400">{user?.email || user?.phone}</p>
+        </div>
+      </div>
+      <form onSubmit={saveName} className="space-y-3">
+        <div>
+          <label className="label">Display name</label>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <button className="btn-secondary" disabled={saving || name === user?.name}>
+          {saving ? 'Saving…' : 'Update name'}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+const MyAccess = () => {
+  const { user, permissions } = useAuth();
+  if (permissions === null) {
+    return (
+      <div className="card mt-6 p-5">
+        <h2 className="font-semibold">My access</h2>
+        <p className="mt-2 text-sm text-slate-500">Platform administrators have unrestricted access.</p>
+      </div>
+    );
+  }
+  const groups = [...new Set((permissions || []).map((p) => PERMISSION_LABELS[p]?.group).filter(Boolean))];
+  return (
+    <div className="card mt-6 p-5">
+      <h2 className="font-semibold">What you can do</h2>
+      <p className="mb-3 text-sm text-slate-500">
+        Your access as <span className="font-medium">{ROLE_LABELS[user?.role] || user?.role}</span>. Ask the
+        proprietor or headteacher if you need something you don't have.
+      </p>
+      {groups.length === 0 ? (
+        <p className="text-sm text-slate-400">No special permissions.</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {groups.map((g) => (
+            <div key={g}>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{g}</p>
+              <ul className="space-y-1">
+                {(permissions || []).filter((p) => PERMISSION_LABELS[p]?.group === g).map((p) => (
+                  <li key={p} className="flex items-start gap-1.5 text-sm text-slate-600">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /> {PERMISSION_LABELS[p]?.label || p}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const RolesMatrix = () => {
   const { can } = useAuth();
@@ -218,7 +333,9 @@ const Settings = () => {
       <ErrorNote error={error ? { response: { data: { message: error } } } : null} />
       {saved && <p className="mb-4 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">Saved ✓</p>}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <MyProfile />
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <form
           className="card h-fit space-y-4 p-6"
           onSubmit={(e) => {
@@ -294,6 +411,7 @@ const Settings = () => {
       </div>
 
       <RolesMatrix />
+      <MyAccess />
     </div>
   );
 };

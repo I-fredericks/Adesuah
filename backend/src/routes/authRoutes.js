@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
-const { validate, loginSchema, changePasswordSchema, registerSchoolSchema, schoolUpdateSchema } = require('../middlewares/validation');
+const { validate, loginSchema, changePasswordSchema, registerSchoolSchema, schoolUpdateSchema, profileSchema } = require('../middlewares/validation');
 
 const rateLimit = require('express-rate-limit');
 const authLimiter = rateLimit({
@@ -16,6 +16,7 @@ router.post('/register-school', authLimiter, validate(registerSchoolSchema), aut
 router.post('/login', authLimiter, validate(loginSchema), auth.login);
 router.post('/forgot-password', authLimiter, auth.forgotPassword);
 router.get('/me', protect, auth.me);
+router.put('/profile', protect, validate(profileSchema), auth.updateProfile);
 router.put('/change-password', protect, validate(changePasswordSchema), auth.changePassword);
 
 module.exports = router;

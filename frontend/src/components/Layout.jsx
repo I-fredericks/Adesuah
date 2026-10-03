@@ -18,6 +18,8 @@ import {
   Bell,
   LogOut,
   GraduationCap,
+  Clock,
+  Banknote,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -28,9 +30,12 @@ const NAV = [
   { to: '/academics', label: 'Academics', icon: BookOpen, perm: 'academics.view', hideParent: true },
   { to: '/attendance', label: 'Attendance', icon: CalendarCheck, perm: 'attendance.view', hideParent: true },
   { to: '/scores', label: 'Score Entry', icon: ClipboardList, perm: 'grades.enter', hideParent: true },
+  { to: '/assignments', label: 'Assignments', icon: BookOpen, perm: 'grades.enter', hideParent: true },
   { to: '/corrections', label: 'Corrections', icon: ClipboardCheck, perm: 'grades.view', hideParent: false },
   { to: '/reports', label: 'Report Cards', icon: FileText, perm: 'reports.view', hideParent: true },
+  { to: '/extra-classes', label: 'Extra Classes', icon: Clock, perm: 'academics.view', hideParent: true },
   { to: '/fees', label: 'Fees', icon: Wallet, perm: 'fees.view', hideParent: true },
+  { to: '/salary', label: 'Salary', icon: Banknote, perm: 'school.view', hideParent: true },
   { to: '/announcements', label: 'Announcements', icon: Megaphone, perm: 'announcements.view', hideParent: false },
   { to: '/staff-attendance', label: 'Staff Attendance', icon: UserCheck, perm: 'staff.view', hideParent: true },
   { to: '/staff', label: 'Staff', icon: UserCog, perm: 'staff.view', hideParent: true },
@@ -129,8 +134,16 @@ const Layout = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="hidden min-w-0 text-sm text-slate-500 sm:block">
-            Welcome back, <span className="font-medium text-slate-700">{user?.name}</span>
+          <div className="hidden min-w-0 items-center gap-2 text-sm text-slate-500 sm:flex">
+            <span>Welcome back,</span>
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" />
+            ) : (
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
+                {(user?.name || '?').charAt(0)}
+              </span>
+            )}
+            <span className="font-medium text-slate-700">{user?.name}</span>
           </div>
           <NotificationsBell />
         </header>

@@ -9,6 +9,7 @@ router.use(protect, requireStaff);
 router.get('/', students.listStudents);
 router.post('/', requirePermission('students.create'), validate(studentSchema), students.createStudent);
 router.get('/:id', students.getStudent);
+router.post('/:id/photo', requirePermission('students.edit'), students.updatePhoto);
 router.put('/:id', requirePermission('students.edit'), validate(studentUpdateSchema), students.updateStudent);
 router.put('/:id/status', requirePermission('students.status'), students.setStudentStatus);
 router.put('/:id/transfer', requirePermission('students.transfer'), students.transferClass);

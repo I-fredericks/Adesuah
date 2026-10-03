@@ -207,6 +207,31 @@ const deleteGuardian = async (req, res) => {
   res.json({ message: 'Guardian removed' });
 };
 
+// Teacher/office photo update for a pupil.
+const updatePhoto = async (req, res) => {
+  const schoolId = resolveSchoolId(req);
+  const { photoUrl } = req.body;
+  if (!photoUrl || photoUrl.length > 1_500_000) {
+    return res.status(400).json({ message: 'Image is too large — please choose a smaller photo' });
+  }
+  const classScope = await resolveClassScope(req, schoolId);
+
+  const where = {
+    id: Number(req.params.id),
+    schoolId,
+    ...(classScope !== null ? { currentClassId: { in: classScope } } : {}),
+  };
+  const student = await prisma.student.findFirst({ where });
+  if (!student) return res.status(404).json({ message: 'Student not found' });
+
+  const updated = await prisma.student.update({
+    where: { id: student.id },
+    data: { photoUrl },
+    select: { id: true, photoUrl: true },
+  });
+  res.json({ student: updated });
+};
+
 const setStudentStatus = async (req, res) => {
   const schoolId = resolveSchoolId(req);
   const { status } = req.body;
@@ -244,5 +269,6 @@ module.exports = {
   deleteGuardian,
   setStudentStatus,
   transferClass,
+  updatePhoto,
   promoteClass,
 };

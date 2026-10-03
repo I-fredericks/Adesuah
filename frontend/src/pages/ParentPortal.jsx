@@ -25,6 +25,12 @@ const ParentPortal = () => {
     enabled: !!selected && !!reportTerm,
   });
 
+  const { data: assignments } = useQuery({
+    queryKey: ['childAssignments', selected],
+    queryFn: () => api.get(`/portal/children/${selected}/assignments`).then((r) => r.data),
+    enabled: !!selected,
+  });
+
   if (isLoading) return <Spinner className="mx-auto h-8 w-8" />;
 
   return (
@@ -141,6 +147,28 @@ const ParentPortal = () => {
                     Published {formatDate(report.reportCard.publishedAt)} · teacher: “{report.reportCard.teacherRemark || '—'}”
                   </p>
                 </div>
+              )}
+
+              <h3 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-slate-400">
+                Homework & assignments
+              </h3>
+              {!assignments || assignments.length === 0 ? (
+                <p className="text-sm text-slate-400">No assignments given yet</p>
+              ) : (
+                <ul className="space-y-2">
+                  {assignments.slice(0, 8).map((a) => (
+                    <li key={a.id} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{a.title}</span>
+                        {a.dueDate && <Badge tone="amber">Due {formatDate(a.dueDate)}</Badge>}
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        {a.subject?.name || 'General'}{a.teacher ? ` · ${a.teacher.name}` : ''}
+                      </p>
+                      {a.description && <p className="mt-1 text-xs text-slate-500">{a.description}</p>}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           </div>

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Camera } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, Badge, Spinner, Card } from '../components/ui';
 import { formatMoney, formatDate, termLabel } from '../utils/format';
+import { resizeImage } from '../utils/permissions';
 import { useAuth } from '../context/AuthContext';
 
 const StudentDetail = () => {
@@ -11,6 +13,26 @@ const StudentDetail = () => {
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
+  const [photoMsg, setPhotoMsg] = useState('');
+
+  const photoMutation = useMutation({
+    mutationFn: (photoUrl) => api.post(`/students/${id}/photo`, { photoUrl }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] });
+      setPhotoMsg('Photo updated ✓');
+      setTimeout(() => setPhotoMsg(''), 2500);
+    },
+    onError: (err) => setError(getErrorMessage(err)),
+  });
+
+  const uploadPhoto = async (file) => {
+    try {
+      const dataUrl = await resizeImage(file);
+      photoMutation.mutate(dataUrl);
+    } catch {
+      setError('Could not read that image');
+    }
+  };
 
   const { data, isLoading, error: loadError } = useQuery({
     queryKey: ['student', id],
@@ -56,10 +78,38 @@ const StudentDetail = () => {
         }
       />
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {photoMsg && <p className="mb-4 text-sm text-emerald-600">{photoMsg}</p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="card p-5">
-          <h2 className="mb-4 font-semibold">Profile</h2>
+          <div className="mb-4 flex items-center gap-4">
+            <label className="group relative cursor-pointer">
+              {s.photoUrl ? (
+                <img src={s.photoUrl} alt="" className="h-20 w-20 rounded-full object-cover" />
+              ) : (
+                <span className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-100 text-3xl font-bold text-brand-700">
+                  {s.firstName.charAt(0)}
+                </span>
+              )}
+              {can('students.edit') && (
+                <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow border border-slate-200">
+                  <Camera className="h-4 w-4 text-slate-600" />
+                </span>
+              )}
+              {can('students.edit') && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files[0] && uploadPhoto(e.target.files[0])}
+                />
+              )}
+            </label>
+            <div>
+              <h2 className="font-semibold">Profile</h2>
+              <p className="text-xs text-slate-400">Photo visible to staff and guardians</p>
+            </div>
+          </div>
           <dl className="space-y-2.5 text-sm">
             <div className="flex justify-between"><dt className="text-slate-500">Gender</dt><dd>{s.gender === 'MALE' ? 'Male' : 'Female'}</dd></div>
             <div className="flex justify-between"><dt className="text-slate-500">Date of birth</dt><dd>{formatDate(s.dateOfBirth)}</dd></div>

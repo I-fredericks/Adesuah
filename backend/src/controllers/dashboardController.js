@@ -96,7 +96,7 @@ const getDashboard = async (req, res) => {
   const present = todayAttendance.filter((a) => a.status === 'PRESENT' || a.status === 'LATE').length;
 
   // Role-aware sections
-  const [teacherClasses, staffAttendanceToday, correctionsPending, scoreGaps] = await Promise.all([
+  const [teacherClasses, staffAttendanceToday, correctionsPending, scoreGaps, recentActivity] = await Promise.all([
     can('grades.enter') && !can('grades.view_all')
       ? permissionService.teacherAssignedClassIds(schoolId, req.user.id)
       : Promise.resolve(null),
@@ -129,6 +129,17 @@ const getDashboard = async (req, res) => {
             .filter((r) => !done.has(`${r.classId}:${r.subjectId}`))
             .slice(0, 12)
             .map((r) => ({ className: r.class.name, subject: r.subject.name }));
+        })
+      : Promise.resolve([]),
+    can('grades.approve')
+      ? prisma.auditLog.findMany({
+          where: {
+            schoolId,
+            action: { in: ['SCORE_EDIT', 'CORRECTION_REQUEST', 'CORRECTION_APPLY', 'CORRECTION_REJECT', 'REPORTS_PUBLISH', 'REPORTS_LOCK'] },
+          },
+          include: { user: { select: { name: true, role: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 12,
         })
       : Promise.resolve([]),
   ]);
@@ -204,6 +215,15 @@ const getDashboard = async (req, res) => {
       : undefined,
     correctionsPending,
     scoreGaps,
+    recentActivity: (recentActivity || []).map((log) => ({
+      id: log.id,
+      action: log.action,
+      by: log.user?.name || 'System',
+      byRole: log.user?.role,
+      detail: log.after || log.before || {},
+      reason: log.reason,
+      at: log.createdAt,
+    })),
     announcements,
     recentPayments: can('fees.view')
       ? recentPayments.map((p) => ({

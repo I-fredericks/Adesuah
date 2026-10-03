@@ -48,6 +48,14 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
+  const refreshUser = async () => {
+    const res = await api.get('/auth/me');
+    setUser(res.data.user);
+    setSchool(res.data.user.school);
+    setPermissions(res.data.permissions ?? []);
+    return res.data.user;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
@@ -65,7 +73,7 @@ export const AuthProvider = ({ children }) => {
   const isManagement = ['OWNER', 'HEADTEACHER', 'DEPUTY_HEAD'].includes(user?.role);
 
   return (
-    <AuthContext.Provider value={{ user, school, loading, login, registerSchool, logout, can, isPlatform, isManagement }}>
+    <AuthContext.Provider value={{ user, school, loading, login, registerSchool, logout, refreshUser, can, isPlatform, isManagement }}>
       {children}
     </AuthContext.Provider>
   );

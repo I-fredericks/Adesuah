@@ -96,6 +96,37 @@ const Dashboard = () => {
         </Link>
       )}
 
+      {sections.corrections && (data.recentActivity || []).length > 0 && (
+        <div className="card mt-6 p-5">
+          <h2 className="mb-1 font-semibold">Results activity</h2>
+          <p className="mb-3 text-xs text-slate-400">Who uploaded or changed results, when, and for which subject</p>
+          <ul className="divide-y divide-slate-100">
+            {data.recentActivity.map((a) => {
+              const d = a.detail || {};
+              const what =
+                a.action === 'REPORTS_PUBLISH'
+                  ? 'Published report cards'
+                  : a.action === 'REPORTS_LOCK'
+                    ? 'Locked report cards'
+                    : a.action === 'CORRECTION_REQUEST'
+                      ? `Requested correction — ${d.student || ''}`
+                      : a.action === 'CORRECTION_APPLY'
+                        ? `Applied correction — ${d.student || ''}`
+                        : `${d.subject || 'Score'} · ${d.student || ''}: ${d.rawScore}`;
+              return (
+                <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                  <span>
+                    <span className="font-medium">{a.by}</span>{' '}
+                    <span className="text-slate-500">{what}</span>
+                  </span>
+                  <span className="text-xs text-slate-400">{new Date(a.at).toLocaleString()}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
