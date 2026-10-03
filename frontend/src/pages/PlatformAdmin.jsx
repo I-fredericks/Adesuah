@@ -53,7 +53,7 @@ const PlatformAdmin = () => {
       />
 
       {stats && (
-        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Schools" value={stats.schoolCount} />
           <StatCard label="Active schools" value={stats.activeSchools} tone="text-emerald-600" />
           <StatCard label="Students" value={stats.studentCount} />
@@ -115,7 +115,7 @@ const PlatformAdmin = () => {
             className="space-y-4"
           >
             <ErrorNote error={error ? { response: { data: { message: error } } } : null} />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="col-span-2">
                 <label className="label">School name *</label>
                 <input className="input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
@@ -130,7 +130,7 @@ const PlatformAdmin = () => {
               </div>
             </div>
             <hr />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="col-span-2 text-sm font-medium text-slate-600">Owner account</div>
               <div>
                 <label className="label">Name *</label>

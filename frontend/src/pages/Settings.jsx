@@ -74,7 +74,7 @@ const Settings = () => {
           }}
         >
           <h2 className="font-semibold">School profile</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="col-span-2">
               <label className="label">School name</label>
               <input className="input" value={schoolForm.name} onChange={set('name')} disabled={!isManagement} />

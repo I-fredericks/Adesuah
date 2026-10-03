@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
+const path = require('path');
 
 dotenv.config();
 
@@ -81,8 +82,30 @@ app.use('/api', require('./routes/communicationRoutes'));
 app.use('/api/staff', require('./routes/staffRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
-const { errorHandler, notFound } = require('./middlewares/errorHandler');
-app.use(notFound);
+const distPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(distPath, {
+  setHeaders: (res, filePath) => {
+    if (filePath.startsWith(path.join(distPath, 'assets'))) {
+      res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      res.set('Cache-Control', 'no-cache');
+    }
+  },
+}));
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  const indexPath = path.join(distPath, 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      res.send('Adesuah API is running...');
+    }
+  });
+});
+
+const { errorHandler } = require('./middlewares/errorHandler');
 app.use(errorHandler);
 
 app.listen(PORT, () => {

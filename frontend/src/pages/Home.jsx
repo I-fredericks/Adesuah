@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   GraduationCap,
@@ -11,6 +12,8 @@ import {
   CheckCircle2,
   ClipboardList,
   BellRing,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -78,19 +81,22 @@ const Logo = ({ dark }) => (
 
 const Home = () => {
   const { user } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
       <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 lg:px-6">
-          <Logo />
+          <Link to="/" aria-label="Adesuah home">
+            <Logo />
+          </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
             <a href="#features" className="hover:text-slate-900">Features</a>
             <a href="#how" className="hover:text-slate-900">How it works</a>
             <a href="#pricing" className="hover:text-slate-900">Pricing</a>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 sm:flex">
             {user ? (
               <Link to="/dashboard" className="btn-primary">
                 Open dashboard <ArrowRight className="h-4 w-4" />
@@ -102,7 +108,35 @@ const Home = () => {
               </>
             )}
           </div>
+          <button
+            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 sm:hidden"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
+        {menuOpen && (
+          <div className="border-t border-slate-100 bg-white px-4 py-4 sm:hidden">
+            <nav className="flex flex-col gap-1 text-sm font-medium text-slate-600">
+              <a href="#features" className="rounded-lg px-3 py-2 hover:bg-slate-50" onClick={() => setMenuOpen(false)}>Features</a>
+              <a href="#how" className="rounded-lg px-3 py-2 hover:bg-slate-50" onClick={() => setMenuOpen(false)}>How it works</a>
+              <a href="#pricing" className="rounded-lg px-3 py-2 hover:bg-slate-50" onClick={() => setMenuOpen(false)}>Pricing</a>
+            </nav>
+            <div className="mt-3 flex flex-col gap-2">
+              {user ? (
+                <Link to="/dashboard" className="btn-primary w-full" onClick={() => setMenuOpen(false)}>
+                  Open dashboard <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="btn-secondary w-full" onClick={() => setMenuOpen(false)}>Sign in</Link>
+                  <Link to="/register" className="btn-primary w-full" onClick={() => setMenuOpen(false)}>Get started</Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero */}

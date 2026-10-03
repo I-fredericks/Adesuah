@@ -141,7 +141,7 @@ const Academics = () => {
       )}
 
       {tab === 'Subjects' && (
-        <div className="card p-5">
+        <div className="card overflow-x-auto p-5">
           <table className="w-full">
             <thead><tr><th className="th">Subject</th><th className="th">Code</th><th className="th">Type</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
@@ -177,7 +177,7 @@ const Academics = () => {
       )}
 
       {tab === 'Assessment Types' && (
-        <div className="card p-5">
+        <div className="card overflow-x-auto p-5">
           <p className="mb-4 text-sm text-slate-500">
             Scores are weighted: subject total = Σ(raw score × weight). Weights currently sum to{' '}
             <span className={types.reduce((s, t) => s + t.weight, 0) === 100 ? 'font-semibold text-emerald-600' : 'font-semibold text-red-600'}>

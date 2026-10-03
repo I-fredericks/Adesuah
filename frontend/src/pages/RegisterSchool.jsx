@@ -61,7 +61,7 @@ const RegisterSchool = () => {
         <form onSubmit={submit} className="card space-y-4 p-6">
           {error && <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</div>}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="col-span-2">
               <label className="label">School name *</label>
               <input className="input" value={form.name} onChange={set('name')} required placeholder="e.g. Rising Stars Academy" />
@@ -82,7 +82,7 @@ const RegisterSchool = () => {
 
           <hr />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="col-span-2 text-sm font-medium text-slate-600">Proprietor / Head account</div>
             <div>
               <label className="label">Your name *</label>

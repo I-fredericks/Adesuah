@@ -41,7 +41,7 @@ const PaymentModal = ({ invoice, onClose }) => {
           <p>{termLabel(invoice.term?.name)} · Total {formatMoney(invoice.amountTotal)}</p>
           <p className="font-semibold text-red-600">Balance: {formatMoney(invoice.balance)}</p>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Amount (GHS) *</label>
             <input className="input" type="number" step="0.01" min="0.01" max={invoice.balance} value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} required />
@@ -107,7 +107,7 @@ const StructureModal = ({ open, onClose, classes, terms }) => {
         className="space-y-4"
       >
         <ErrorNote error={error ? { response: { data: { message: error } } } : null} />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Class *</label>
             <select className="input" value={form.classId} onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value }))} required>

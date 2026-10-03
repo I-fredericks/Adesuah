@@ -4,11 +4,16 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
     port: 5173,
+    // Allow access through ngrok / tunnel domains during development
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
+        // ngrok forwards the public host; keep Vite from rewriting it
+        secure: false,
       },
     },
   },

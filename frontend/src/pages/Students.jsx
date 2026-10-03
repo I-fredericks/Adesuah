@@ -57,7 +57,7 @@ const AddStudentModal = ({ open, onClose, classes }) => {
     <Modal open={open} onClose={onClose} title="Enroll student" wide>
       <form onSubmit={submit} className="space-y-4">
         <ErrorNote error={error ? { response: { data: { message: error } } } : null} />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="label">First name *</label>
             <input className="input" value={form.firstName} onChange={set('firstName')} required />
@@ -91,7 +91,7 @@ const AddStudentModal = ({ open, onClose, classes }) => {
           </div>
         </div>
         <hr />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="col-span-2 text-sm font-medium text-slate-600">Guardian</div>
           <div>
             <label className="label">Name *</label>

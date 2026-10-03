@@ -152,14 +152,34 @@ Demo/test schools created during development exist in the local DB:
 - `owner@gracehills.edu.gh` — Grace Hills School (Password123)
 - `proprietor@demo-school.edu.gh` — Rising Stars Academy via `npm run seed` (Password123)
 
-## 5. Testing
+## 5. Mobile & ngrok access
+
+The whole UI is mobile-responsive (collapsible sidebar, stacked forms, scrollable tables).
+
+**Option A — one tunnel (recommended):** the backend serves the built frontend, so one ngrok
+tunnel exposes the entire app on the same origin (no CORS, no second tunnel):
+
+```bash
+cd frontend && npm run build      # build the SPA once
+ngrok http 5000                   # tunnel the backend
+# open the https://….ngrok-free.app URL it prints — full app + API on one origin
+```
+
+Ngrok free shows a one-time "Visit Site" interstitial per browser session. For a fixed
+address add a static domain: `ngrok http 5000 --domain=your-name.ngrok-free.app`.
+
+**Option B — dev mode over ngrok:** `vite.config.js` sets `host: true` and
+`allowedHosts: true`, so you can also tunnel `ngrok http 5173` while `npm run dev` runs
+(the Vite proxy forwards `/api` to the backend on :5000).
+
+## 6. Testing
 
 ```bash
 cd backend  && npm test      # Jest — pure domain logic (grading, positions, fee math)
 cd frontend && npm test      # Vitest
 ```
 
-## 6. API overview (all under `/api`)
+## 7. API overview (all under `/api`)
 
 | Area | Endpoints |
 |---|---|

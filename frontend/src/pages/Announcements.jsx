@@ -111,7 +111,7 @@ const Announcements = () => {
               <label className="label">Message *</label>
               <textarea className="input h-28" value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} required />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="label">Audience</label>
                 <select className="input" value={form.audience} onChange={(e) => setForm((f) => ({ ...f, audience: e.target.value }))}>
