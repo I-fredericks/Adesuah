@@ -6,9 +6,20 @@ const { notifyUsers } = require('../services/notificationService');
 
 const list = async (req, res) => {
   const schoolId = resolveSchoolId(req);
+  const permissionService = require('../services/permissionService');
+  const { hasPermission } = require('../utils/permissions');
+  if (!req._permissions) {
+    req._permissions = await permissionService.getUserPermissions(req.user);
+  }
+  let classScope = null;
+  if (req.user.role !== 'SUPER_ADMIN' && !hasPermission(req._permissions || [], 'grades.view_all')) {
+    classScope = await permissionService.teacherAssignedClassIds(schoolId, req.user.id);
+  }
+
   const assignments = await prisma.assignment.findMany({
     where: {
       schoolId,
+      ...(classScope !== null ? { classId: { in: classScope } } : {}),
       ...(req.query.classId ? { classId: Number(req.query.classId) } : {}),
       ...(req.query.termId ? { termId: Number(req.query.termId) } : {}),
     },

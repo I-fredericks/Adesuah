@@ -211,8 +211,9 @@ const deleteGuardian = async (req, res) => {
 const updatePhoto = async (req, res) => {
   const schoolId = resolveSchoolId(req);
   const { photoUrl } = req.body;
-  if (!photoUrl || photoUrl.length > 1_500_000) {
-    return res.status(400).json({ message: 'Image is too large — please choose a smaller photo' });
+  const AVATAR_RE = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/;
+  if (!photoUrl || !AVATAR_RE.test(photoUrl) || photoUrl.length > 1_500_000) {
+    return res.status(400).json({ message: 'Please upload a valid PNG, JPEG or WebP image' });
   }
   const classScope = await resolveClassScope(req, schoolId);
 

@@ -1,5 +1,5 @@
 const prisma = require('../config/db');
-const { resolveSchoolId } = require('../middlewares/authMiddleware');
+const { resolveSchoolId, resolveClassScope } = require('../middlewares/authMiddleware');
 const permissionService = require('../services/permissionService');
 const { CATALOG, ROLE_LABELS, normalizeRole, DEFAULT_ROLE_PERMISSIONS } = require('../utils/permissions');
 
@@ -230,11 +230,16 @@ const updateClass = async (req, res) => {
 
 const classRoster = async (req, res) => {
   const schoolId = resolveSchoolId(req);
+  const classScope = await resolveClassScope(req, schoolId);
+  const classId = Number(req.params.id);
+  if (classScope !== null && !classScope.includes(classId)) {
+    return res.json({ students: [] });
+  }
   const students = await prisma.student.findMany({
     where: {
       schoolId,
-      currentClassId: Number(req.params.id),
-      status: { in: ['ACTIVE', 'SUSPENDED'] },
+      currentClassId: classId,
+      status: 'ACTIVE',
     },
     orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     select: {

@@ -17,6 +17,26 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
+// Refuse known-weak JWT secrets: if the deployed secret is the example value
+// (or too short), anyone who reads the public repo can forge admin tokens.
+const WEAK_SECRETS = new Set([
+  'change-me-to-a-long-random-string',
+  'change-me',
+  'secret',
+  'jwt_secret',
+]);
+if (
+  WEAK_SECRETS.has((process.env.JWT_SECRET || '').toLowerCase()) ||
+  (process.env.JWT_SECRET || '').length < 24
+) {
+  const msg = 'JWT_SECRET is weak or matches the public example value. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"';
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: ' + msg);
+    process.exit(1);
+  }
+  console.warn('⚠️  ' + msg);
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 

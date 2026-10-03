@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
 const { resolveSchoolId } = require('../middlewares/authMiddleware');
+const permissionService = require('../services/permissionService');
 const { audit } = require('../services/auditService');
 const { notifyUsers } = require('../services/notificationService');
 const { publishClassReports } = require('../services/reportService');
@@ -93,11 +94,11 @@ const listCorrections = async (req, res) => {
   const schoolId = resolveSchoolId(req);
   const status = req.query.status || undefined;
 
-  const scope = req.query.mine === '1'
-    ? [{ requestedById: req.user.id }]
-    : hasPermission(req._permissions || [], 'grades.approve')
-      ? []
-      : [{ requestedById: req.user.id }];
+  if (!req._permissions) {
+    req._permissions = await permissionService.getUserPermissions(req.user);
+  }
+  const isApprover = hasPermission(req._permissions || [], 'grades.approve');
+  const scope = isApprover ? [] : [{ requestedById: req.user.id }];
 
   const corrections = await prisma.resultCorrection.findMany({
     where: { schoolId, ...(status ? { status } : {}), ...(scope.length ? { OR: scope } : {}) },

@@ -162,8 +162,9 @@ const changePassword = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   const { name, avatarUrl } = req.body;
-  if (avatarUrl && avatarUrl.length > 1_500_000) {
-    return res.status(400).json({ message: 'Image is too large — please choose a smaller photo' });
+  const AVATAR_RE = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/;
+  if (avatarUrl && (!AVATAR_RE.test(avatarUrl) || avatarUrl.length > 1_500_000)) {
+    return res.status(400).json({ message: 'Please upload a valid PNG, JPEG or WebP image' });
   }
   const user = await prisma.user.update({
     where: { id: req.user.id },

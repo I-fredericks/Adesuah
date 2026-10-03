@@ -161,8 +161,9 @@ const getChildAssignments = async (req, res) => {
 // Guardians may update their child's photo.
 const updateChildPhoto = async (req, res) => {
   const { photoUrl } = req.body;
-  if (!photoUrl || photoUrl.length > 1_500_000) {
-    return res.status(400).json({ message: 'Image is too large — please choose a smaller photo' });
+  const AVATAR_RE = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/;
+  if (!photoUrl || !AVATAR_RE.test(photoUrl) || photoUrl.length > 1_500_000) {
+    return res.status(400).json({ message: 'Please upload a valid PNG, JPEG or WebP image' });
   }
   const link = await prisma.guardian.findFirst({
     where: { userId: req.user.id, studentId: Number(req.params.id) },
