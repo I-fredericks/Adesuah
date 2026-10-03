@@ -39,7 +39,7 @@ const RegisterSchool = () => {
           password: form.password,
         },
       });
-      window.location.href = '/';
+      window.location.href = '/dashboard';
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -52,7 +52,7 @@ const RegisterSchool = () => {
       <div className="w-full max-w-lg">
         <div className="mb-6 text-center">
           <GraduationCap className="mx-auto h-10 w-10 text-brand-600" />
-          <h1 className="mt-2 text-xl font-bold">Register your school</h1>
+          <h1 className="mt-2 text-xl font-bold">Register your school on Adesuah</h1>
           <p className="text-sm text-slate-500">
             Your school gets its own secure workspace. Classes, subjects, grading and a 3-term
             calendar are set up automatically.

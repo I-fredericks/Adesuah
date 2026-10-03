@@ -1,7 +1,7 @@
 {
-  "name": "schoolhub-backend",
+  "name": "adesuah-backend",
   "version": "1.0.0",
-  "description": "Multi-tenant school management API for private primary & JHS schools",
+  "description": "Multi-tenant school management API for private primary & JHS schools (Adesuah)",
   "main": "src/index.js",
   "scripts": {
     "build": "prisma generate",

@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import { Spinner } from './components/ui';
 
+import Home from './pages/Home';
 import Login from './pages/Login';
 import RegisterSchool from './pages/RegisterSchool';
 import Dashboard from './pages/Dashboard';
@@ -31,6 +32,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<RegisterSchool />} />
 
@@ -41,7 +43,7 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/students" element={<Suspense fallback={<Loading />}><Students /></Suspense>} />
           <Route path="/students/:id" element={<Suspense fallback={<Loading />}><StudentDetail /></Suspense>} />
           <Route path="/academics" element={<Suspense fallback={<Loading />}><Academics /></Suspense>} />

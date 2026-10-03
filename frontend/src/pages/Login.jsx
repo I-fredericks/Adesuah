@@ -16,7 +16,7 @@ const Login = () => {
     setBusy(true);
     try {
       await login(identifier, password);
-      window.location.href = '/';
+      window.location.href = '/dashboard';
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {
@@ -25,11 +25,15 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 p-4">
+      <Link to="/" className="mb-6 flex items-center gap-2 text-slate-500 transition hover:text-slate-700">
+        <GraduationCap className="h-5 w-5" />
+        <span className="text-sm font-medium">Back to home</span>
+      </Link>
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <GraduationCap className="mx-auto h-12 w-12 text-brand-600" />
-          <h1 className="mt-3 text-2xl font-bold text-slate-800">SchoolHub</h1>
+          <h1 className="mt-3 text-2xl font-bold text-slate-800">Adesuah</h1>
           <p className="text-sm text-slate-500">Sign in to your school account</p>
         </div>
         <form onSubmit={submit} className="card space-y-4 p-6">

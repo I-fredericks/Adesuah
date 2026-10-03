@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, show: () => true },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, show: () => true },
   { to: '/students', label: 'Students', icon: Users, show: () => true },
   { to: '/academics', label: 'Academics', icon: BookOpen, show: () => true },
   { to: '/attendance', label: 'Attendance', icon: CalendarCheck, show: (a) => a.canTeach },
@@ -68,8 +68,8 @@ const Layout = () => {
         <div className="flex h-14 items-center gap-2 border-b border-slate-800 px-4">
           <GraduationCap className="h-6 w-6 text-brand-500" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">{school?.name || 'SchoolHub'}</p>
-            <p className="truncate text-[11px] text-slate-400">{user?.role?.replace('_', ' ')}</p>
+            <p className="text-sm font-bold text-white">Adesuah</p>
+            <p className="truncate text-[11px] text-slate-400">{school?.name || user?.role?.replace('_', ' ')}</p>
           </div>
         </div>
         <nav className="space-y-0.5 p-3">
@@ -77,7 +77,7 @@ const Layout = () => {
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
+              end={to === '/dashboard'}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-brand-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`
@@ -90,7 +90,10 @@ const Layout = () => {
         </nav>
         <div className="absolute bottom-0 w-full border-t border-slate-800 p-3">
           <button
-            onClick={logout}
+            onClick={() => {
+              logout();
+              window.location.href = '/';
+            }}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-slate-800 hover:text-white"
           >
             <LogOut className="h-4 w-4" />

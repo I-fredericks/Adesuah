@@ -66,7 +66,7 @@ const apiLimiter = rateLimit({
 
 app.use('/api', apiLimiter);
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'schoolhub-api' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'adesuah-api' }));
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/platform', require('./routes/platformRoutes'));
@@ -86,7 +86,7 @@ app.use(notFound);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`SchoolHub API running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
+  console.log(`Adesuah API running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
 });
 
 module.exports = app;

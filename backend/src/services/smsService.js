@@ -1,6 +1,6 @@
 const SMS_API_KEY = process.env.SMS_API_KEY;
 const SMS_API_URL = process.env.SMS_API_URL || 'https://sms.arkesel.com/api/v2/sms/send';
-const SMS_SENDER_ID = process.env.SMS_SENDER_ID || 'SchoolHub';
+const SMS_SENDER_ID = process.env.SMS_SENDER_ID || 'Adesuah';
 
 const normalizePhone = (phone) => {
   if (!phone) return null;

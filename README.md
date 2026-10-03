@@ -1,8 +1,8 @@
-# SchoolHub — Multi-School Management System for Private Basic Schools
+# Adesuah — Multi-School Management System for Private Basic Schools
 
-A multi-tenant SaaS platform that lets many private **Primary & JHS schools** register on one
-system and manage admissions, academics, attendance, assessments, report cards, fees and
-communication — replacing the paper registers, handwritten report cards and cash-receipt
+**Adesuah** is a multi-tenant SaaS platform that lets many private **Primary & JHS schools**
+register on one system and manage admissions, academics, attendance, assessments, report cards,
+fees and communication — replacing the paper registers, handwritten report cards and cash-receipt
 books most local private schools still run on.
 
 Same stack as the car-marketplace project (SikaRide).
