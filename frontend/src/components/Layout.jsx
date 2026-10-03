@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from "@tanstack/react-query";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Users,
@@ -21,34 +21,37 @@ import {
   Clock,
   Banknote,
   Menu,
-  X,
+  ChevronDown,
+  UserCircle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import NotificationPanel from './NotificationPanel';
 
 const NAV = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'school.view', hideParent: true },
-  { to: '/students', label: 'Students', icon: Users, perm: 'students.view', hideParent: true },
-  { to: '/academics', label: 'Academics', icon: BookOpen, perm: 'academics.view', hideParent: true },
-  { to: '/attendance', label: 'Attendance', icon: CalendarCheck, perm: 'attendance.view', hideParent: true },
-  { to: '/scores', label: 'Score Entry', icon: ClipboardList, perm: 'grades.enter', hideParent: true },
-  { to: '/assignments', label: 'Assignments', icon: BookOpen, perm: 'grades.enter', hideParent: true },
-  { to: '/corrections', label: 'Corrections', icon: ClipboardCheck, perm: 'grades.view', hideParent: false },
-  { to: '/reports', label: 'Report Cards', icon: FileText, perm: 'reports.view', hideParent: true },
-  { to: '/extra-classes', label: 'Extra Classes', icon: Clock, perm: 'academics.view', hideParent: true },
-  { to: '/fees', label: 'Fees', icon: Wallet, perm: 'fees.view', hideParent: true },
-  { to: '/salary', label: 'Salary', icon: Banknote, perm: 'school.view', hideParent: true },
-  { to: '/announcements', label: 'Announcements', icon: Megaphone, perm: 'announcements.view', hideParent: false },
-  { to: '/staff-attendance', label: 'Staff Attendance', icon: UserCheck, perm: 'staff.view', hideParent: true },
-  { to: '/staff', label: 'Staff', icon: UserCog, perm: 'staff.view', hideParent: true },
-  { to: '/settings', label: 'Settings', icon: Settings, perm: 'school.view', hideParent: true },
-  { to: '/portal', label: 'My Children', icon: Users, perm: null, parentOnly: true },
-  { to: '/portal/announcements', label: 'Announcements', icon: Megaphone, perm: null, parentOnly: true },
-  { to: '/platform', label: 'Platform Admin', icon: Building2, perm: null, platform: true },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'school.view', hideParent: true, group: 'Overview' },
+  { to: '/students', label: 'Students', icon: Users, perm: 'students.view', hideParent: true, group: 'School' },
+  { to: '/academics', label: 'Academics', icon: BookOpen, perm: 'academics.view', hideParent: true, group: 'School' },
+  { to: '/extra-classes', label: 'Extra Classes', icon: Clock, perm: 'academics.view', hideParent: true, group: 'School' },
+  { to: '/attendance', label: 'Attendance', icon: CalendarCheck, perm: 'attendance.view', hideParent: true, group: 'School' },
+  { to: '/assignments', label: 'Assignments', icon: BookOpen, perm: 'grades.enter', hideParent: true, group: 'School' },
+  { to: '/scores', label: 'Score Entry', icon: ClipboardList, perm: 'grades.enter', hideParent: true, group: 'Results' },
+  { to: '/corrections', label: 'Corrections', icon: ClipboardCheck, perm: 'grades.view', hideParent: false, group: 'Results' },
+  { to: '/reports', label: 'Report Cards', icon: FileText, perm: 'reports.view', hideParent: true, group: 'Results' },
+  { to: '/fees', label: 'Fees', icon: Wallet, perm: 'fees.view', hideParent: true, group: 'Finance' },
+  { to: '/salary', label: 'Salary', icon: Banknote, perm: 'school.view', hideParent: true, group: 'Finance' },
+  { to: '/announcements', label: 'Announcements', icon: Megaphone, perm: 'announcements.view', hideParent: false, group: 'People' },
+  { to: '/staff', label: 'Staff', icon: UserCog, perm: 'staff.view', hideParent: true, group: 'People' },
+  { to: '/staff-attendance', label: 'Staff Attendance', icon: UserCheck, perm: 'staff.view', hideParent: true, group: 'People' },
+  { to: '/settings', label: 'Settings', icon: Settings, perm: 'school.view', hideParent: true, group: 'System' },
+  { to: '/portal', label: 'My Children', icon: Users, perm: null, parentOnly: true, group: 'Portal' },
+  { to: '/portal/announcements', label: 'Announcements', icon: Megaphone, perm: null, parentOnly: true, group: 'Portal' },
+  { to: '/platform', label: 'Platform Admin', icon: Building2, perm: null, platform: true, group: 'System' },
 ];
 
-const Avatar = ({ user, size = 'h-7 w-7', text = 'text-xs' }) =>
+const GROUP_ORDER = ['Overview', 'School', 'Results', 'Finance', 'People', 'System', 'Portal'];
+
+const Avatar = ({ user, size = 'h-8 w-8', text = 'text-xs' }) =>
   user?.avatarUrl ? (
     <img src={user.avatarUrl} alt="" className={`${size} rounded-full object-cover`} />
   ) : (
@@ -69,8 +72,10 @@ const useUnread = (open) => {
 
 const Layout = () => {
   const { user, school, logout, can, isPlatform } = useAuth();
+  const location = useLocation();
   const [panelOpen, setPanelOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const unread = useUnread(panelOpen);
 
@@ -82,9 +87,13 @@ const Layout = () => {
     return can(item.perm);
   });
 
-  // Bottom nav: 4 primary items, the rest behind "More"
   const primary = nav.slice(0, 4);
   const rest = nav.slice(4);
+  const current = nav.find((n) =>
+    n.to === '/dashboard' || n.to === '/portal'
+      ? location.pathname === n.to
+      : location.pathname.startsWith(n.to)
+  );
 
   const doLogout = () => {
     logout();
@@ -102,7 +111,7 @@ const Layout = () => {
       className={({ isActive: active }) =>
         mobile
           ? `flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[10px] ${active ? 'text-brand-600 font-semibold' : 'text-slate-500'}`
-          : `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${active ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`
+          : `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${active ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`
       }
     >
       <item.icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
@@ -111,29 +120,50 @@ const Layout = () => {
   );
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-slate-50">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-slate-800 bg-slate-900 text-slate-300 lg:flex">
-        <div className="flex h-14 items-center gap-2 border-b border-slate-800 px-4">
-          <GraduationCap className="h-6 w-6 text-brand-500" />
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-slate-200 bg-white lg:flex">
+        <div className="flex h-16 items-center gap-2.5 border-b border-slate-100 px-5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600">
+            <GraduationCap className="h-5 w-5 text-white" />
+          </span>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-white">Adesuah</p>
-            <p className="truncate text-[11px] text-slate-400">{school?.name || user?.role?.replace('_', ' ')}</p>
+            <p className="text-[15px] font-bold tracking-tight text-slate-900">Adesuah</p>
+            <p className="truncate text-[10px] font-medium uppercase tracking-wider text-slate-400">
+              {school?.shortName || school?.name || user?.role?.replace('_', ' ')}
+            </p>
           </div>
         </div>
-        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-          {nav.map((item) => (
-            <NavLinkItem key={item.to} item={item} />
-          ))}
+
+        <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
+          {GROUP_ORDER.map((group) => {
+            const items = nav.filter((n) => n.group === group);
+            if (items.length === 0) return null;
+            return (
+              <div key={group}>
+                <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">{group}</p>
+                <div className="space-y-0.5">
+                  {items.map((item) => (
+                    <NavLinkItem key={item.to} item={item} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </nav>
-        <div className="border-t border-slate-800 p-3">
-          <button
-            onClick={doLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-slate-800 hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+
+        {/* User card */}
+        <div className="border-t border-slate-100 p-3">
+          <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 p-2.5">
+            <Avatar user={user} size="h-9 w-9" text="text-sm" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-slate-800">{user?.name}</p>
+              <p className="truncate text-[11px] text-slate-400">{user?.role?.replace('_', ' ')}</p>
+            </div>
+            <button onClick={doLogout} className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-red-500" title="Sign out">
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -143,18 +173,22 @@ const Layout = () => {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur lg:px-6">
-          <div className="flex items-center gap-2 lg:hidden">
-            <GraduationCap className="h-6 w-6 text-brand-600" />
-            <span className="font-bold text-slate-800">Adesuah</span>
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 pl-4 pr-4 backdrop-blur lg:pl-8 lg:pr-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex items-center gap-2 lg:hidden">
+              <GraduationCap className="h-6 w-6 text-brand-600" />
+              <span className="font-bold text-slate-800">Adesuah</span>
+            </div>
+            <h1 className="hidden truncate text-lg font-semibold text-slate-900 lg:block">
+              {current?.label || 'Adesuah'}
+            </h1>
+            {school && !isPlatform && (
+              <span className="hidden rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700 xl:inline">
+                {school?.shortName || school?.name}
+              </span>
+            )}
           </div>
-          <div className="hidden min-w-0 items-center gap-2 text-sm text-slate-500 lg:flex">
-            <span>Welcome back,</span>
-            <span className="font-medium text-slate-700">{user?.name}</span>
-            <span className="text-slate-300">·</span>
-            <span className="truncate text-slate-400">{school?.name || user?.role?.replace('_', ' ')}</span>
-          </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               className="relative rounded-full p-2 hover:bg-slate-100"
               onClick={() => setPanelOpen(true)}
@@ -167,13 +201,58 @@ const Layout = () => {
                 </span>
               )}
             </button>
-            <button className="rounded-full p-0.5" onClick={() => setSidebarOpen(true)} aria-label="Account menu">
-              <Avatar user={user} size="h-8 w-8" />
+            {/* Avatar dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                className="flex items-center gap-1.5 rounded-full p-0.5 pr-1 hover:bg-slate-100"
+              >
+                <Avatar user={user} size="h-9 w-9" text="text-sm" />
+                <ChevronDown className="h-4 w-4 text-slate-400" />
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1.5 shadow-lg">
+                    <div className="border-b border-slate-100 px-4 py-2.5">
+                      <p className="truncate text-sm font-semibold">{user?.name}</p>
+                      <p className="truncate text-xs text-slate-400">{user?.email || user?.phone}</p>
+                    </div>
+                    {!isParent && (
+                      <NavLink
+                        to="/settings"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <UserCircle className="h-4 w-4" /> Profile & settings
+                      </NavLink>
+                    )}
+                    {isParent && (
+                      <NavLink
+                        to="/portal"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <Users className="h-4 w-4" /> My children
+                      </NavLink>
+                    )}
+                    <button
+                      onClick={doLogout}
+                      className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" /> Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            <button className="rounded-full p-1 lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+              <Menu className="h-6 w-6 text-slate-500" />
             </button>
           </div>
         </header>
 
-        {/* Account sheet (opened from avatar on mobile) */}
+        {/* Account sheet (mobile avatar menu) */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setSidebarOpen(false)}>
             <div className="absolute inset-0 bg-black/30" />
@@ -206,15 +285,13 @@ const Layout = () => {
           </div>
         )}
 
-        <main className="flex-1 p-4 pb-24 lg:p-6 lg:pb-6">
+        <main className="mx-auto w-full max-w-7xl flex-1 p-4 pb-24 lg:p-8 lg:pb-8">
           <Outlet />
         </main>
       </div>
 
       {/* Mobile bottom navigation */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
-      >
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         <div className="grid grid-cols-5">
           {primary.map((item) => (
             <NavLinkItem key={item.to} item={item} mobile />

@@ -67,9 +67,16 @@ export const Card = ({ className = '', children }) => (
   <div className={`card ${className}`}>{children}</div>
 );
 
-export const StatCard = ({ label, value, sub, tone }) => (
+export const StatCard = ({ label, value, sub, tone, icon: Icon }) => (
   <div className="card p-5">
-    <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+    <div className="flex items-start justify-between">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      {Icon && (
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50">
+          <Icon className="h-5 w-5 text-brand-600" />
+        </span>
+      )}
+    </div>
     <p className={`mt-1 text-2xl font-bold ${tone || 'text-slate-800'}`}>{value}</p>
     {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
   </div>

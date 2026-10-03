@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import { PageHeader, StatCard, Badge, Spinner, Card } from '../components/ui';
+import { Users, CalendarCheck, AlertTriangle, UserCheck } from 'lucide-react';
 import { formatMoney, formatDate, termLabel } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
@@ -33,21 +34,41 @@ const Dashboard = () => {
         }
       />
 
+      {/* Hero */}
+      <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-800 via-brand-600 to-brand-500 p-6 text-white lg:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-brand-100">{data.currentTerm ? `${termLabel(data.currentTerm.name)} · ${data.academicYear?.name || ''}` : 'No active term'}</p>
+            <h2 className="mt-1 text-2xl font-bold lg:text-3xl">Good day, {user?.name?.split(' ')[0]} 👋</h2>
+            <p className="mt-1 text-sm text-brand-100">
+              {data.students.active} pupils · {data.classCount} classes · {data.staffCount} staff
+            </p>
+          </div>
+          {sections.finances && (
+            <div className="rounded-xl bg-white/10 p-4 backdrop-blur">
+              <p className="text-xs font-medium text-brand-100">Collection this term</p>
+              <p className="text-2xl font-bold">{fees.collectionRate || 0}%</p>
+              <div className="mt-1.5 h-2 w-40 overflow-hidden rounded-full bg-white/20">
+                <div className="h-full rounded-full bg-emerald-300" style={{ width: `${Math.min(fees.collectionRate || 0, 100)}%` }} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {sections.enrollment && (
-          <StatCard label="Active students" value={data.students.active} sub={`${data.students.male} boys · ${data.students.female} girls`} />
+          <StatCard icon={Users} label="Active students" value={data.students.active} sub={`${data.students.male} boys · ${data.students.female} girls`} />
         )}
         {sections.attendanceOverview && (
-          <StatCard label="Pupil attendance today" value={data.attendanceToday.rate !== null ? `${data.attendanceToday.rate}%` : 'Not marked'} sub={`${data.attendanceToday.present}/${data.attendanceToday.marked} present`} />
+          <StatCard icon={CalendarCheck} label="Pupil attendance today" value={data.attendanceToday.rate !== null ? `${data.attendanceToday.rate}%` : 'Not marked'} sub={`${data.attendanceToday.present}/${data.attendanceToday.marked} present`} />
         )}
         {sections.staffAttendance && data.staffAttendanceToday && (
-          <StatCard label="Staff attendance today" value={data.staffAttendanceToday.rate !== null ? `${data.staffAttendanceToday.rate}%` : 'Not marked'} sub={`${data.staffAttendanceToday.present}/${data.staffAttendanceToday.marked} present`} />
+          <StatCard icon={UserCheck} label="Staff attendance today" value={data.staffAttendanceToday.rate !== null ? `${data.staffAttendanceToday.rate}%` : 'Not marked'} sub={`${data.staffAttendanceToday.present}/${data.staffAttendanceToday.marked} present`} />
         )}
         {sections.finances && (
-          <>
-            <StatCard label="Collected this term" value={formatMoney(fees.collected)} sub={`${fees.collectionRate || 0}% of ${formatMoney(fees.expected)}`} tone="text-emerald-600" />
-            <StatCard label="Outstanding" value={formatMoney(fees.outstanding)} sub={`${fees.debtorsCount || 0} unpaid invoices`} tone="text-red-600" />
-          </>
+          <StatCard icon={AlertTriangle} label="Outstanding fees" value={formatMoney(fees.outstanding)} sub={`${fees.debtorsCount || 0} unpaid invoices`} tone="text-red-600" />
         )}
       </div>
 
