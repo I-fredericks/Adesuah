@@ -44,14 +44,18 @@ export const ErrorNote = ({ error }) =>
 export const Modal = ({ open, onClose, title, children, wide }) => {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
       <div
-        className={`max-h-[90vh] w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} overflow-y-auto rounded-xl bg-white p-6 shadow-xl`}
+        className={`max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 pb-10 shadow-xl sm:rounded-xl sm:p-6 sm:pb-6 ${wide ? 'sm:max-w-3xl' : 'sm:max-w-lg'}`}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200 sm:hidden" />
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-2xl leading-none text-slate-400 hover:text-slate-600">×</button>
         </div>
         {children}
       </div>

@@ -26,6 +26,7 @@ const Assignments = lazy(() => import('./pages/Assignments'));
 const Settings = lazy(() => import('./pages/Settings'));
 const PlatformAdmin = lazy(() => import('./pages/PlatformAdmin'));
 const ParentPortal = lazy(() => import('./pages/ParentPortal'));
+const PortalAnnouncements = lazy(() => import('./pages/PortalAnnouncements'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Loading = () => (
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="/settings" element={<Suspense fallback={<Loading />}><Settings /></Suspense>} />
           <Route path="/platform" element={<Suspense fallback={<Loading />}><PlatformAdmin /></Suspense>} />
           <Route path="/portal" element={<Suspense fallback={<Loading />}><ParentPortal /></Suspense>} />
+          <Route path="/portal/announcements" element={<Suspense fallback={<Loading />}><PortalAnnouncements /></Suspense>} />
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
       </Routes>

@@ -64,7 +64,7 @@ const getChildDetail = async (req, res) => {
         include: {
           currentClass: { select: { name: true } },
           invoices: { include: { term: { select: { name: true } }, installments: true, payments: true } },
-          attendance: { orderBy: { date: 'desc' }, take: 90, select: { date: true, status: true } },
+          attendance: { orderBy: { date: 'desc' }, take: 60, select: { date: true, status: true } },
           reportCards: {
             where: { published: true },
             include: { term: { select: { name: true } } },
@@ -80,7 +80,7 @@ const getChildDetail = async (req, res) => {
   }
 
   const s = link.student;
-  const attendance = s.attendance.reduce(
+  const attendanceCounts = s.attendance.reduce(
     (acc, a) => {
       acc[a.status] = (acc[a.status] || 0) + 1;
       return acc;
@@ -93,10 +93,12 @@ const getChildDetail = async (req, res) => {
       id: s.id,
       name: `${s.firstName} ${s.lastName}`,
       admissionNo: s.admissionNo,
+      photoUrl: s.photoUrl,
       class: s.currentClass?.name || null,
       relationship: link.relationship,
     },
-    attendance,
+    attendanceCounts,
+    recentAttendance: s.attendance.map((a) => ({ date: a.date, status: a.status })),
     invoices: s.invoices.map((i) => ({
       id: i.id,
       term: i.term.name,
@@ -158,9 +160,31 @@ const getChildAssignments = async (req, res) => {
   res.json({ assignments });
 };
 
+// Active extra classes for a child's class (morning classes etc.).
+const getChildExtraClasses = async (req, res) => {
+  const link = await prisma.guardian.findFirst({
+    where: { userId: req.user.id, studentId: Number(req.params.id) },
+    include: { student: { select: { currentClassId: true } } },
+  });
+  if (!link) return res.status(404).json({ message: 'Child not found' });
+
+  const extraClasses = await prisma.extraClass.findMany({
+    where: {
+      schoolId: req.user.schoolId,
+      classId: link.student.currentClassId,
+      status: 'ACTIVE',
+    },
+    include: {
+      subject: { select: { name: true } },
+      teacher: { select: { name: true } },
+    },
+    orderBy: { startTime: 'asc' },
+  });
+  res.json({ extraClasses });
+};
+
 // Guardians may update their child's photo.
-const updateChildPhoto = async (req, res) => {
-  const { photoUrl } = req.body;
+const updateChildPhoto = async (req, res) => {  const { photoUrl } = req.body;
   const AVATAR_RE = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/;
   if (!photoUrl || !AVATAR_RE.test(photoUrl) || photoUrl.length > 1_500_000) {
     return res.status(400).json({ message: 'Please upload a valid PNG, JPEG or WebP image' });
@@ -201,4 +225,13 @@ const getPortalAnnouncements = async (req, res) => {
   res.json({ announcements });
 };
 
-module.exports = { requireParent, getMyChildren, getChildDetail, getChildReport, getChildAssignments, updateChildPhoto, getPortalAnnouncements };
+module.exports = {
+  requireParent,
+  getMyChildren,
+  getChildDetail,
+  getChildReport,
+  getChildAssignments,
+  getChildExtraClasses,
+  updateChildPhoto,
+  getPortalAnnouncements,
+};

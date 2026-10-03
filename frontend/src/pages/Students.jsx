@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, Badge, Spinner, EmptyState, Modal, ErrorNote } from '../components/ui';
-import { formatDate } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
 const AddStudentModal = ({ open, onClose, classes }) => {
@@ -190,7 +189,32 @@ const Students = () => {
       ) : !data || data.students.length === 0 ? (
         <EmptyState message="No students found" />
       ) : (
-        <div className="card overflow-x-auto">
+        <>
+          {/* Mobile: card list */}
+          <div className="space-y-2.5 md:hidden">
+            {data.students.map((s) => {
+              const primary = s.guardians?.find((g) => g.isPrimary) || s.guardians?.[0];
+              return (
+                <Link key={s.id} to={`/students/${s.id}`} className="card block p-4 active:bg-slate-50">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">
+                        {s.lastName}, {s.firstName} {s.otherNames}
+                      </p>
+                      <p className="font-mono text-[11px] text-slate-400">{s.admissionNo} · {s.currentClass?.name || '—'}</p>
+                      {primary && <p className="mt-0.5 truncate text-xs text-slate-400">{primary.name} · {primary.phone}</p>}
+                    </div>
+                    <Badge tone={s.status === 'ACTIVE' ? 'green' : s.status === 'GRADUATED' ? 'blue' : 'amber'}>
+                      {s.status}
+                    </Badge>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="card hidden overflow-x-auto md:block">
           <table className="w-full">
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
@@ -228,7 +252,8 @@ const Students = () => {
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       {data && data.pages > 1 && (

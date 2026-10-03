@@ -1,179 +1,356 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronRight, Printer, Camera, Megaphone } from 'lucide-react';
 import api from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge, Modal } from '../components/ui';
-import { formatDate, formatMoney } from '../utils/format';
+import { PageHeader, Spinner, EmptyState, Badge, StatCard, Card } from '../components/ui';
+import { formatMoney, formatDate, termLabel, ordinalSuffixClient, ROLE_LABELS } from '../utils/format';
+import { resizeImage } from '../utils/permissions';
+import { useAuth } from '../context/AuthContext';
+
+const TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'results', label: 'Results' },
+  { key: 'attendance', label: 'Attendance' },
+  { key: 'fees', label: 'Fees' },
+  { key: 'homework', label: 'Homework' },
+];
+
+const STATUS_TONE = { PAID: 'green', PARTIAL: 'amber', UNPAID: 'red', WAIVED: 'blue', PENDING: 'slate' };
+const ATT_TONE = { PRESENT: 'green', ABSENT: 'red', LATE: 'amber', EXCUSED: 'blue' };
+
+const ChildSwitcher = ({ children: kids, selected, onSelect }) => {
+  const { refreshUser } = useAuth();
+  const queryClient = useQueryClient();
+  const [photoMsg, setPhotoMsg] = useState(false);
+
+  const upload = useMutation({
+    mutationFn: ({ id, photoUrl }) => api.post(`/portal/children/${id}/photo`, { photoUrl }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myChildren'] });
+      queryClient.invalidateQueries({ queryKey: ['child', selected] });
+      setPhotoMsg(true);
+      refreshUser();
+      setTimeout(() => setPhotoMsg(false), 2500);
+    },
+  });
+
+  const child = kids.find((c) => c.id === selected);
+
+  return (
+    <div>
+      <div className="flex items-center gap-3">
+        <label className="relative cursor-pointer">
+          {child?.photoUrl ? (
+            <img src={child.photoUrl} alt="" className="h-14 w-14 rounded-2xl object-cover" />
+          ) : (
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-xl font-bold text-brand-700">
+              {(child?.name || '?').charAt(0)}
+            </span>
+          )}
+          <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white shadow border border-slate-200">
+            <Camera className="h-3.5 w-3.5 text-slate-600" />
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files[0];
+              if (f) resizeImage(f).then((url) => upload.mutate({ id: selected, photoUrl: url }));
+            }}
+          />
+        </label>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-lg font-bold">{child?.name || '—'}</p>
+          <p className="text-xs text-slate-400">
+            {child?.class || 'No class'} · {child?.admissionNo}
+            {photoMsg && <span className="ml-1 text-emerald-600">· photo saved ✓</span>}
+          </p>
+        </div>
+      </div>
+      {kids.length > 1 && (
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {kids.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => onSelect(c.id)}
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition ${selected === c.id ? 'border-brand-500 bg-brand-50 font-semibold text-brand-700' : 'border-slate-200 text-slate-500'}`}
+            >
+              {c.name.split(' ')[0]} · {c.class || '—'}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ParentPortal = () => {
-  const [selected, setSelected] = useState(null);
-  const [reportTerm, setReportTerm] = useState(null);
+  const { user } = useAuth();
+  const [childId, setChildId] = useState(null);
+  const [tab, setTab] = useState('overview');
 
   const { data, isLoading } = useQuery({
     queryKey: ['myChildren'],
     queryFn: () => api.get('/portal/children').then((r) => r.data),
   });
 
-  const { data: detail } = useQuery({
-    queryKey: ['child', selected],
-    queryFn: () => api.get(`/portal/children/${selected}`).then((r) => r.data),
-    enabled: !!selected,
-  });
+  useEffect(() => {
+    if (!childId && data?.children?.length) setChildId(data.children[0].id);
+  }, [data, childId]);
 
-  const { data: report } = useQuery({
-    queryKey: ['childReport', selected, reportTerm],
-    queryFn: () => api.get(`/portal/children/${selected}/report`, { params: { termId: reportTerm } }).then((r) => r.data),
-    enabled: !!selected && !!reportTerm,
+  const { data: detail } = useQuery({
+    queryKey: ['child', childId],
+    queryFn: () => api.get(`/portal/children/${childId}`).then((r) => r.data),
+    enabled: !!childId,
   });
 
   const { data: assignments } = useQuery({
-    queryKey: ['childAssignments', selected],
-    queryFn: () => api.get(`/portal/children/${selected}/assignments`).then((r) => r.data),
-    enabled: !!selected,
+    queryKey: ['childAssignments', childId],
+    queryFn: () => api.get(`/portal/children/${childId}/assignments`).then((r) => r.data),
+    enabled: !!childId,
+  });
+
+  const { data: extraClasses } = useQuery({
+    queryKey: ['childExtraClasses', childId],
+    queryFn: () => api.get(`/portal/children/${childId}/extra-classes`).then((r) => r.data),
+    enabled: !!childId,
+  });
+
+  const { data: announcements } = useQuery({
+    queryKey: ['portalAnnouncements'],
+    queryFn: () => api.get('/portal/announcements').then((r) => r.data),
   });
 
   if (isLoading) return <Spinner className="mx-auto h-8 w-8" />;
 
-  return (
-    <div>
-      <PageHeader title="My children" subtitle="Attendance, fees and published results" />
+  const kids = data?.children || [];
 
-      {!data || data.children.length === 0 ? (
+  if (kids.length === 0) {
+    return (
+      <div>
+        <PageHeader title="My children" />
         <EmptyState message="No children linked to your account yet. Please contact the school office." />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.children.map((c) => (
-            <button key={c.id} className="card p-5 text-left transition hover:shadow-md" onClick={() => { setSelected(c.id); setReportTerm(null); }}>
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">{c.name}</h3>
-                <Badge tone="blue">{c.class || 'No class'}</Badge>
-              </div>
-              <p className="mt-1 font-mono text-xs text-slate-400">{c.admissionNo}</p>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-lg bg-slate-50 p-2">
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">Attendance</p>
-                  <p className="font-semibold">{c.attendanceRate !== null ? `${c.attendanceRate}%` : '—'}</p>
-                </div>
-                <div className="rounded-lg bg-slate-50 p-2">
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">Fee balance</p>
-                  <p className={`font-semibold ${c.feeBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {formatMoney(c.feeBalance)}
-                  </p>
-                </div>
-              </div>
-              {c.latestResult && (
-                <p className="mt-3 text-xs text-slate-500">
-                  Latest: {c.latestResult.term.name.replace('TERM_', 'Term ')} · average{' '}
-                  <span className="font-semibold">{c.latestResult.average}%</span> · position {c.latestResult.classPosition}
-                </p>
-              )}
+      </div>
+    );
+  }
+
+  const child = kids.find((c) => c.id === childId) || kids[0];
+  const d = detail || null;
+  const totalOutstanding = (d?.invoices || []).reduce((s, i) => s + i.balance, 0);
+  const totalPaid = (d?.invoices || []).reduce((s, i) => s + i.paid, 0);
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      {/* Parent header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold">Hello, {user?.name?.split(' ')[0] || 'Parent'} 👋</h1>
+          <p className="text-sm text-slate-400">{ROLE_LABELS[user?.role] || 'Guardian'}</p>
+        </div>
+        <Link
+          to="/portal/announcements"
+          className="flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600"
+        >
+          <Megaphone className="h-3.5 w-3.5" /> Notices
+        </Link>
+      </div>
+
+      <div className="card p-4">
+        <ChildSwitcher children={kids} selected={childId} onSelect={setChildId} />
+      </div>
+
+      {/* Tabs */}
+      <div className="sticky top-14 z-20 -mx-4 mt-4 bg-slate-100/95 px-4 py-2 backdrop-blur">
+        <div className="flex gap-1.5 overflow-x-auto">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${tab === t.key ? 'bg-brand-600 text-white shadow' : 'bg-white text-slate-500'}`}
+            >
+              {t.label}
             </button>
           ))}
         </div>
-      )}
+      </div>
 
-      {detail && (
-        <Modal open onClose={() => { setSelected(null); setReportTerm(null); }} title={`${detail.child.name} — ${detail.child.class || ''}`} wide>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Attendance</h3>
-              <div className="grid grid-cols-4 gap-2 text-center text-sm">
-                {Object.entries(detail.attendance).map(([k, v]) => (
-                  <div key={k} className="rounded-lg border border-slate-200 p-2">
-                    <p className="text-lg font-bold">{v}</p>
-                    <p className="text-[10px] uppercase text-slate-400">{k}</p>
+      <div className="mt-4 space-y-4">
+        {/* ── Overview ── */}
+        {tab === 'overview' && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard label="Attendance" value={child.attendanceRate !== null ? `${child.attendanceRate}%` : '—'} sub="this session" tone={child.attendanceRate >= 90 ? 'text-emerald-600' : 'text-amber-600'} />
+              <StatCard label="Fees owed" value={formatMoney(child.feeBalance)} tone={child.feeBalance > 0 ? 'text-red-600' : 'text-emerald-600'} />
+              <StatCard label="Latest average" value={child.latestResult ? `${child.latestResult.average}%` : '—'} sub={child.latestResult ? `${termLabel(child.latestResult.term.name)} · ${ordinalSuffixClient(child.latestResult.classPosition)} in class` : 'No results yet'} />
+              <StatCard label="Total paid" value={formatMoney(totalPaid)} sub={`${formatMoney(totalOutstanding)} outstanding`} />
+            </div>
+
+            {(extraClasses?.extraClasses || []).length > 0 && (
+              <Card className="p-4">
+                <h3 className="mb-2 text-sm font-semibold">Extra classes</h3>
+                <ul className="space-y-2">
+                  {extraClasses.extraClasses.map((x) => (
+                    <li key={x.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                      <div>
+                        <p className="font-medium">{x.title}</p>
+                        <p className="text-xs text-slate-400">{x.days} · {x.startTime}–{x.endTime}{x.venue ? ` · ${x.venue}` : ''}</p>
+                      </div>
+                      {x.subject && <Badge tone="blue">{x.subject.name}</Badge>}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+
+            {(announcements?.announcements || []).slice(0, 3).map((a) => (
+              <Card key={a.id} className="p-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold">{a.title}</h3>
+                  {a.isPinned && <Badge tone="red">Pinned</Badge>}
+                </div>
+                <p className="mt-1 line-clamp-2 text-xs text-slate-500">{a.body}</p>
+                <p className="mt-1 text-[10px] text-slate-400">{formatDate(a.createdAt)}</p>
+              </Card>
+            ))}
+            <Link
+              to="/portal/announcements"
+              className="flex items-center justify-center gap-1 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-brand-600"
+            >
+              See all notices <ChevronRight className="h-4 w-4" />
+            </Link>
+          </>
+        )}
+
+        {/* ── Results ── */}
+        {tab === 'results' && (
+          !d || d.reportCards.length === 0 ? (
+            <EmptyState message="No published results yet — check back after the term ends" />
+          ) : (
+            d.reportCards.map((rc) => (
+              <Card key={rc.id} className="overflow-hidden p-0">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <div>
+                    <p className="font-semibold">{termLabel(rc.term.name)}</p>
+                    <p className="text-xs text-slate-400">Published {formatDate(rc.publishedAt)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-brand-600">{rc.average}%</p>
+                    <p className="text-[10px] text-slate-400">{ordinalSuffixClient(rc.classPosition)} position</p>
+                  </div>
+                </div>
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50 text-left text-slate-400">
+                    <tr>
+                      <th className="px-3 py-2">Subject</th>
+                      <th className="px-3 py-2 text-center">Total</th>
+                      <th className="px-3 py-2 text-center">Grade</th>
+                      <th className="px-3 py-2 text-center">Pos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rc.subjects.map((s) => (
+                      <tr key={s.subjectId} className="border-t border-slate-100">
+                        <td className="px-3 py-2">{s.subject}</td>
+                        <td className="px-3 py-2 text-center">{s.total ?? '—'}</td>
+                        <td className="px-3 py-2 text-center font-semibold">{s.grade ?? '—'}</td>
+                        <td className="px-3 py-2 text-center">{s.position ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {rc.teacherRemark && (
+                  <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
+                    <span className="font-medium">Teacher:</span> {rc.teacherRemark}
+                  </p>
+                )}
+              </Card>
+            ))
+          )
+        )}
+
+        {/* ── Attendance ── */}
+        {tab === 'attendance' && (
+          !d ? <Spinner className="mx-auto h-8 w-8" /> : (
+            <>
+              <div className="grid grid-cols-4 gap-2">
+                {Object.entries(d.attendanceCounts).map(([k, v]) => (
+                  <div key={k} className="rounded-xl border border-slate-200 p-3 text-center">
+                    <p className="text-xl font-bold">{v}</p>
+                    <p className={`text-[10px] uppercase ${k === 'PRESENT' ? 'text-emerald-600' : k === 'ABSENT' ? 'text-red-500' : 'text-slate-400'}`}>{k}</p>
                   </div>
                 ))}
               </div>
+              <Card className="divide-y divide-slate-100">
+                {d.recentAttendance.length === 0 ? (
+                  <EmptyState message="No attendance recorded yet" />
+                ) : (
+                  d.recentAttendance.map((a, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                      <span className="text-slate-500">{formatDate(a.date)}</span>
+                      <Badge tone={ATT_TONE[a.status]}>{a.status}</Badge>
+                    </div>
+                  ))
+                )}
+              </Card>
+            </>
+          )
+        )}
 
-              <h3 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-slate-400">Fees</h3>
-              {detail.invoices.length === 0 ? (
-                <p className="text-sm text-slate-400">No invoices yet</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {detail.invoices.map((i) => (
-                    <li key={i.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
-                      <span>{i.term.replace('TERM_', 'Term ')}</span>
-                      <span className={i.balance > 0 ? 'font-semibold text-red-600' : 'font-semibold text-emerald-600'}>
-                        {formatMoney(i.balance)} {i.status !== 'PAID' && <Badge tone={i.status === 'PARTIAL' ? 'amber' : 'red'}>{i.status}</Badge>}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+        {/* ── Fees ── */}
+        {tab === 'fees' && (
+          !d || d.invoices.length === 0 ? (
+            <EmptyState message="No fees billed yet" />
+          ) : (
+            <>
+              {d.invoices.map((inv) => (
+                <Card key={inv.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold">{termLabel(inv.term)}</p>
+                    <Badge tone={STATUS_TONE[inv.status]}>{inv.status}</Badge>
+                  </div>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="rounded-lg bg-slate-50 p-2"><p className="text-slate-400">Total</p><p className="font-semibold">{formatMoney(inv.total)}</p></div>
+                    <div className="rounded-lg bg-slate-50 p-2"><p className="text-slate-400">Paid</p><p className="font-semibold text-emerald-600">{formatMoney(inv.paid)}</p></div>
+                    <div className="rounded-lg bg-slate-50 p-2"><p className="text-slate-400">Balance</p><p className={`font-semibold ${inv.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{formatMoney(inv.balance)}</p></div>
+                  </div>
+                  {inv.installments > 0 && <p className="mt-2 text-xs text-slate-400">Paid in {inv.installments} agreed instalment(s)</p>}
+                  <p className="mt-1 text-[10px] text-slate-300">Pay at the school bursar's office or via mobile money — receipts are issued for every payment.</p>
+                </Card>
+              ))}
+              <button
+                onClick={() => window.print()}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-600"
+              >
+                <Printer className="h-4 w-4" /> Print fee statement
+              </button>
+            </>
+          )
+        )}
 
-            <div>
-              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Published reports</h3>
-              {detail.reportCards.length === 0 ? (
-                <p className="text-sm text-slate-400">No published reports yet</p>
-              ) : (
-                <ul className="space-y-2">
-                  {detail.reportCards.map((rc) => (
-                    <li key={rc.id}>
-                      <button
-                        className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${reportTerm === rc.termId ? 'border-brand-500 bg-brand-50' : 'border-slate-200 hover:bg-slate-50'}`}
-                        onClick={() => setReportTerm(rc.termId)}
-                      >
-                        <span className="font-medium">{rc.term.name.replace('TERM_', 'Term ')}</span>
-                        <span className="float-right text-slate-500">avg {rc.average}% · {rc.classPosition ? `${rc.classPosition} position` : ''}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {report?.reportCard && (
-                <div className="mt-3 rounded-lg border border-slate-200 p-3">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="text-left text-slate-400">
-                        <th className="py-1">Subject</th>
-                        <th className="py-1 text-center">Total</th>
-                        <th className="py-1 text-center">Grade</th>
-                        <th className="py-1 text-center">Pos</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.reportCard.subjects.map((s) => (
-                        <tr key={s.subjectId} className="border-t border-slate-100">
-                          <td className="py-1">{s.subject}</td>
-                          <td className="py-1 text-center">{s.total ?? '—'}</td>
-                          <td className="py-1 text-center font-semibold">{s.grade ?? '—'}</td>
-                          <td className="py-1 text-center">{s.position ?? '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p className="mt-2 text-xs text-slate-400">
-                    Published {formatDate(report.reportCard.publishedAt)} · teacher: “{report.reportCard.teacherRemark || '—'}”
-                  </p>
-                </div>
-              )}
-
-              <h3 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-slate-400">
-                Homework & assignments
-              </h3>
-              {!assignments || assignments.length === 0 ? (
-                <p className="text-sm text-slate-400">No assignments given yet</p>
-              ) : (
-                <ul className="space-y-2">
-                  {assignments.slice(0, 8).map((a) => (
-                    <li key={a.id} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">{a.title}</span>
-                        {a.dueDate && <Badge tone="amber">Due {formatDate(a.dueDate)}</Badge>}
-                      </div>
-                      <p className="text-xs text-slate-400">
-                        {a.subject?.name || 'General'}{a.teacher ? ` · ${a.teacher.name}` : ''}
-                      </p>
-                      {a.description && <p className="mt-1 text-xs text-slate-500">{a.description}</p>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </Modal>
-      )}
+        {/* ── Homework ── */}
+        {tab === 'homework' && (
+          !assignments || assignments.length === 0 ? (
+            <EmptyState message="No homework has been given yet" />
+          ) : (
+            assignments.map((a) => {
+              const overdue = a.dueDate && new Date(a.dueDate) < new Date();
+              return (
+                <Card key={a.id} className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-semibold">{a.title}</h3>
+                    {a.dueDate && <Badge tone={overdue ? 'red' : 'amber'}>{overdue ? 'Was due ' : 'Due '}{formatDate(a.dueDate)}</Badge>}
+                  </div>
+                  <p className="mt-1 text-xs font-medium text-brand-600">{a.subject?.name || 'General'}</p>
+                  {a.description && <p className="mt-1.5 text-sm text-slate-600">{a.description}</p>}
+                  <p className="mt-2 text-[10px] text-slate-400">Given by {a.teacher?.name || '—'} · {formatDate(a.createdAt)}</p>
+                </Card>
+              )
+            })
+          )
+        )}
+      </div>
     </div>
   );
 };
