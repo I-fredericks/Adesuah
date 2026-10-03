@@ -14,12 +14,15 @@ const StudentDetail = lazy(() => import('./pages/StudentDetail'));
 const Academics = lazy(() => import('./pages/Academics'));
 const Attendance = lazy(() => import('./pages/Attendance'));
 const ScoreEntry = lazy(() => import('./pages/ScoreEntry'));
+const Corrections = lazy(() => import('./pages/Corrections'));
 const ReportCards = lazy(() => import('./pages/ReportCards'));
 const Fees = lazy(() => import('./pages/Fees'));
 const Announcements = lazy(() => import('./pages/Announcements'));
 const Staff = lazy(() => import('./pages/Staff'));
+const StaffAttendance = lazy(() => import('./pages/StaffAttendance'));
 const Settings = lazy(() => import('./pages/Settings'));
 const PlatformAdmin = lazy(() => import('./pages/PlatformAdmin'));
+const ParentPortal = lazy(() => import('./pages/ParentPortal'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Loading = () => (
@@ -49,12 +52,15 @@ export default function App() {
           <Route path="/academics" element={<Suspense fallback={<Loading />}><Academics /></Suspense>} />
           <Route path="/attendance" element={<Suspense fallback={<Loading />}><Attendance /></Suspense>} />
           <Route path="/scores" element={<Suspense fallback={<Loading />}><ScoreEntry /></Suspense>} />
+          <Route path="/corrections" element={<Suspense fallback={<Loading />}><Corrections /></Suspense>} />
           <Route path="/reports" element={<Suspense fallback={<Loading />}><ReportCards /></Suspense>} />
           <Route path="/fees" element={<Suspense fallback={<Loading />}><Fees /></Suspense>} />
           <Route path="/announcements" element={<Suspense fallback={<Loading />}><Announcements /></Suspense>} />
           <Route path="/staff" element={<Suspense fallback={<Loading />}><Staff /></Suspense>} />
+          <Route path="/staff-attendance" element={<Suspense fallback={<Loading />}><StaffAttendance /></Suspense>} />
           <Route path="/settings" element={<Suspense fallback={<Loading />}><Settings /></Suspense>} />
           <Route path="/platform" element={<Suspense fallback={<Loading />}><PlatformAdmin /></Suspense>} />
+          <Route path="/portal" element={<Suspense fallback={<Loading />}><ParentPortal /></Suspense>} />
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
       </Routes>

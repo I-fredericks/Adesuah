@@ -166,17 +166,23 @@ const computeClassResults = async (schoolId, classId, termId) => {
   };
 };
 
-const publishClassReports = async (schoolId, classId, termId, overrides = new Map()) => {
+const publishClassReports = async (schoolId, classId, termId, overrides = new Map(), { force = false } = {}) => {
   const results = await computeClassResults(schoolId, classId, termId);
   let published = 0;
+  let skippedLocked = 0;
 
   for (const student of results.students) {
     if (student.subjectsExamined === 0) continue;
-    const ov = overrides.get(student.studentId) || {};
     const existing = await prisma.reportCard.findUnique({
       where: { studentId_termId: { studentId: student.studentId, termId } },
-      select: { teacherRemark: true, headRemark: true, conduct: true, interest: true, talent: true },
+      select: { teacherRemark: true, headRemark: true, conduct: true, interest: true, talent: true, locked: true },
     });
+
+    if (existing?.locked && !force) {
+      skippedLocked += 1;
+      continue;
+    }
+    const ov = overrides.get(student.studentId) || {};
 
     await prisma.reportCard.upsert({
       where: { studentId_termId: { studentId: student.studentId, termId } },
@@ -221,7 +227,7 @@ const publishClassReports = async (schoolId, classId, termId, overrides = new Ma
     published += 1;
   }
 
-  return { published, results };
+  return { published, skippedLocked, results };
 };
 
 module.exports = { computeClassResults, publishClassReports };

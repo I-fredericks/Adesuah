@@ -1,5 +1,7 @@
 const prisma = require('../config/db');
-const { resolveSchoolId, assertClassAccess, resolveClassScope } = require('../middlewares/authMiddleware');
+const { resolveSchoolId, assertClassAccess } = require('../middlewares/authMiddleware');
+const { sendSms } = require('../services/smsService');
+const { notifyUsers } = require('../services/notificationService');
 
 const parseDate = (dateStr) => {
   const d = new Date(`${dateStr}T00:00:00.000Z`);
@@ -19,6 +21,12 @@ const markAttendance = async (req, res) => {
   const klass = await prisma.schoolClass.findFirst({ where: { id: classId, schoolId } });
   if (!klass) return res.status(404).json({ message: 'Class not found' });
   await assertClassAccess(req, schoolId, classId);
+
+  const before = await prisma.attendanceRecord.findMany({
+    where: { schoolId, classId, date: day },
+    select: { studentId: true, status: true },
+  });
+  const beforeByStudent = new Map(before.map((r) => [r.studentId, r.status]));
 
   await prisma.$transaction(
     records.map((r) =>
@@ -43,7 +51,45 @@ const markAttendance = async (req, res) => {
     )
   );
 
-  res.json({ message: `Attendance saved for ${records.length} students`, count: records.length });
+  // Absence alerts: notify guardians of pupils newly marked ABSENT (not for
+  // repeated saves of an already-absent pupil). Silent on SMS misconfig.
+  const newlyAbsent = records.filter(
+    (r) => r.status === 'ABSENT' && beforeByStudent.get(r.studentId) !== 'ABSENT'
+  );
+  if (newlyAbsent.length > 0) {
+    const absentStudents = await prisma.student.findMany({
+      where: { schoolId, id: { in: newlyAbsent.map((r) => r.studentId) } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        currentClass: { select: { name: true } },
+        guardians: { select: { phone: true, userId: true } },
+      },
+    });
+
+    for (const student of absentStudents) {
+      const message = `Attendance notice: ${student.firstName} ${student.lastName} (${student.currentClass?.name || 'school'}) was marked ABSENT today, ${date}. If this is unexpected please contact the school.`;
+      sendSms(student.guardians.map((g) => g.phone), message);
+      const guardianUsers = student.guardians.filter((g) => g.userId).map((g) => g.userId);
+      if (guardianUsers.length > 0) {
+        notifyUsers({
+          schoolId,
+          userIds: guardianUsers,
+          type: 'ABSENCE_ALERT',
+          title: 'Absence today',
+          body: message,
+          data: { studentId: student.id, date },
+        });
+      }
+    }
+  }
+
+  res.json({
+    message: `Attendance saved for ${records.length} students${newlyAbsent.length ? `, ${newlyAbsent.length} absence alert(s) queued` : ''}`,
+    count: records.length,
+    absenceAlerts: newlyAbsent.length,
+  });
 };
 
 const getRegister = async (req, res) => {

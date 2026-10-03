@@ -276,6 +276,51 @@ const rolePermissionsSchema = z.object({
   permissions: z.array(z.string()),
 });
 
+const correctionRequestSchema = z.object({
+  studentId: z.number().int(),
+  subjectId: z.number().int(),
+  termId: z.number().int(),
+  assessmentTypeId: z.number().int(),
+  newScore: z.number().min(0).max(100),
+  reason: z.string().min(5, 'A reason of at least 5 characters is required'),
+});
+
+const correctionDecisionSchema = z.object({
+  approve: z.boolean(),
+  note: z.string().optional(),
+});
+
+const reportsLockSchema = z.object({
+  classId: z.number().int(),
+  termId: z.number().int(),
+  locked: z.boolean(),
+});
+
+const staffAttendanceMarkSchema = z.object({
+  date: z.string(),
+  records: z
+    .array(
+      z.object({
+        userId: z.number().int(),
+        status: z.enum(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED']),
+        note: z.string().optional(),
+      })
+    )
+    .min(1, 'Attendance records are required'),
+});
+
+const installmentsSchema = z.object({
+  installments: z
+    .array(
+      z.object({
+        dueDate: z.string(),
+        amount: z.number().positive(),
+        label: z.string().optional(),
+      })
+    )
+    .min(1, 'At least one instalment is required'),
+});
+
 const promoteSchema = z.object({
   classId: z.number().int(),
   toClassId: z.number().int().optional(),
@@ -338,6 +383,11 @@ module.exports = {
   staffCreateSchema,
   staffUpdateSchema,
   rolePermissionsSchema,
+  correctionRequestSchema,
+  correctionDecisionSchema,
+  reportsLockSchema,
+  staffAttendanceMarkSchema,
+  installmentsSchema,
   promoteSchema,
   platformSchoolSchema,
   platformStatusSchema,

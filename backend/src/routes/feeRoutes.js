@@ -8,6 +8,7 @@ const {
   generateInvoicesSchema,
   paymentSchema,
   discountSchema,
+  installmentsSchema,
 } = require('../middlewares/validation');
 
 router.use(protect, requireStaff);
@@ -20,8 +21,10 @@ router.delete('/structures/:id', requirePermission('fees.structure_manage'), fee
 router.post('/invoices/generate', requirePermission('fees.invoice_generate'), validate(generateInvoicesSchema), fees.generateInvoices);
 router.get('/invoices', requirePermission('fees.view'), fees.listInvoices);
 router.get('/invoices/:id', requirePermission('fees.view'), fees.getInvoice);
+router.put('/invoices/:id/installments', requirePermission('fees.structure_manage'), validate(installmentsSchema), fees.setInstallments);
 router.put('/invoices/:id/discount', requirePermission('fees.discount'), validate(discountSchema), fees.setDiscount);
 router.post('/invoices/:id/remind', requirePermission('fees.remind'), fees.remindInvoice);
+router.post('/reminders/run', requirePermission('fees.remind'), fees.runReminders);
 
 router.post('/payments', requirePermission('fees.payment_record'), validate(paymentSchema), fees.recordPayment);
 router.get('/payments', requirePermission('fees.view'), fees.listPayments);

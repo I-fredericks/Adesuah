@@ -7,10 +7,12 @@ import {
   BookOpen,
   CalendarCheck,
   ClipboardList,
+  ClipboardCheck,
   FileText,
   Wallet,
   Megaphone,
   UserCog,
+  UserCheck,
   Settings,
   Building2,
   Bell,
@@ -21,16 +23,19 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
 const NAV = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'school.view' },
-  { to: '/students', label: 'Students', icon: Users, perm: 'students.view' },
-  { to: '/academics', label: 'Academics', icon: BookOpen, perm: 'academics.view' },
-  { to: '/attendance', label: 'Attendance', icon: CalendarCheck, perm: 'attendance.view' },
-  { to: '/scores', label: 'Score Entry', icon: ClipboardList, perm: 'grades.enter' },
-  { to: '/reports', label: 'Report Cards', icon: FileText, perm: 'reports.view' },
-  { to: '/fees', label: 'Fees', icon: Wallet, perm: 'fees.view' },
-  { to: '/announcements', label: 'Announcements', icon: Megaphone, perm: 'announcements.view' },
-  { to: '/staff', label: 'Staff', icon: UserCog, perm: 'staff.view' },
-  { to: '/settings', label: 'Settings', icon: Settings, perm: 'school.view' },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'school.view', hideParent: true },
+  { to: '/students', label: 'Students', icon: Users, perm: 'students.view', hideParent: true },
+  { to: '/academics', label: 'Academics', icon: BookOpen, perm: 'academics.view', hideParent: true },
+  { to: '/attendance', label: 'Attendance', icon: CalendarCheck, perm: 'attendance.view', hideParent: true },
+  { to: '/scores', label: 'Score Entry', icon: ClipboardList, perm: 'grades.enter', hideParent: true },
+  { to: '/corrections', label: 'Corrections', icon: ClipboardCheck, perm: 'grades.view', hideParent: false },
+  { to: '/reports', label: 'Report Cards', icon: FileText, perm: 'reports.view', hideParent: true },
+  { to: '/fees', label: 'Fees', icon: Wallet, perm: 'fees.view', hideParent: true },
+  { to: '/announcements', label: 'Announcements', icon: Megaphone, perm: 'announcements.view', hideParent: false },
+  { to: '/staff-attendance', label: 'Staff Attendance', icon: UserCheck, perm: 'staff.view', hideParent: true },
+  { to: '/staff', label: 'Staff', icon: UserCog, perm: 'staff.view', hideParent: true },
+  { to: '/settings', label: 'Settings', icon: Settings, perm: 'school.view', hideParent: true },
+  { to: '/portal', label: 'My Children', icon: Users, perm: null, parentOnly: true },
   { to: '/platform', label: 'Platform Admin', icon: Building2, perm: null, platform: true },
 ];
 
@@ -58,7 +63,14 @@ const Layout = () => {
   const { user, school, logout, can, isPlatform } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const nav = NAV.filter((item) => (item.platform ? isPlatform : can(item.perm)));
+  const isParent = user?.role === 'PARENT';
+  const nav = NAV.filter((item) => {
+    if (item.platform) return isPlatform;
+    if (item.parentOnly) return isParent;
+    if (isParent) return false;
+    if (item.hideParent && isParent) return false;
+    return can(item.perm);
+  });
 
   return (
     <div className="flex min-h-screen">

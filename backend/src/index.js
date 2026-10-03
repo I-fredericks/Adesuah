@@ -81,6 +81,8 @@ app.use('/api/fees', require('./routes/feeRoutes'));
 app.use('/api', require('./routes/communicationRoutes'));
 app.use('/api/staff', require('./routes/staffRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/portal', require('./routes/portalRoutes'));
+app.use('/api/operations', require('./routes/operationsRoutes'));
 
 const distPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(distPath, {

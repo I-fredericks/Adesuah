@@ -1,11 +1,57 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { BellRing, Printer, MessageCircle } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, Spinner, EmptyState, Badge, Modal, ErrorNote, StatCard } from '../components/ui';
 import { formatMoney, formatDate, termLabel } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
 const STATUS_TONE = { PAID: 'green', PARTIAL: 'amber', UNPAID: 'red', WAIVED: 'blue' };
+const BUCKET_LABELS = { not_due: 'Not yet due', '1_30': '1–30 days', '31_60': '31–60 days', '60_plus': '60+ days' };
+
+const ReceiptModal = ({ payment, onClose }) => {
+  const { data } = useQuery({
+    queryKey: ['invoice', payment.invoiceId],
+    queryFn: () => api.get(`/fees/invoices/${payment.invoiceId}`).then((r) => r.data),
+  });
+
+  const guardianPhone = data?.invoice?.student?.guardians?.[0]?.phone?.replace(/\D/g, '');
+  const waNumber = guardianPhone && guardianPhone.startsWith('0') ? `233${guardianPhone.slice(1)}` : guardianPhone;
+  const waText = encodeURIComponent(
+    `Adesuah Receipt ${payment.receiptNo}\n${payment.invoice.student.firstName} ${payment.invoice.student.lastName}\n${termLabel(payment.invoice.term?.name)} fees\nAmount paid: ${formatMoney(payment.amount)}\nBalance: ${formatMoney(data?.invoice?.balance ?? 0)}\nDate: ${formatDate(payment.paidAt)}\nThank you.`
+  );
+
+  return (
+    <Modal open onClose={onClose} title={`Receipt ${payment.receiptNo}`}>
+      <div className="print-area rounded-lg border border-slate-200 p-5 text-sm">
+        <div className="mb-3 text-center">
+          <p className="text-xs uppercase tracking-wide text-slate-400">Official receipt</p>
+          <p className="font-mono text-sm font-bold">{payment.receiptNo}</p>
+        </div>
+        <dl className="space-y-1.5">
+          <div className="flex justify-between"><dt className="text-slate-500">Pupil</dt><dd className="font-medium">{payment.invoice.student.firstName} {payment.invoice.student.lastName}</dd></div>
+          <div className="flex justify-between"><dt className="text-slate-500">Class</dt><dd>{payment.invoice.student.currentClass?.name || '—'}</dd></div>
+          <div className="flex justify-between"><dt className="text-slate-500">Term</dt><dd>{termLabel(payment.invoice.term?.name)}</dd></div>
+          <div className="flex justify-between"><dt className="text-slate-500">Amount paid</dt><dd className="font-bold text-emerald-600">{formatMoney(payment.amount)}</dd></div>
+          <div className="flex justify-between"><dt className="text-slate-500">Method</dt><dd>{payment.method}</dd></div>
+          <div className="flex justify-between"><dt className="text-slate-500">Reference</dt><dd>{payment.reference || '—'}</dd></div>
+          <div className="flex justify-between"><dt className="text-slate-500">Balance after</dt><dd>{formatMoney(data?.invoice?.balance ?? 0)}</dd></div>
+          <div className="flex justify-between"><dt className="text-slate-500">Date</dt><dd>{formatDate(payment.paidAt)}</dd></div>
+        </dl>
+      </div>
+      <div className="no-print mt-4 flex justify-end gap-2">
+        {waNumber && (
+          <a className="btn-secondary" target="_blank" rel="noreferrer" href={`https://wa.me/${waNumber}?text=${waText}`}>
+            <MessageCircle className="h-4 w-4" /> WhatsApp
+          </a>
+        )}
+        <button className="btn-primary" onClick={() => window.print()}>
+          <Printer className="h-4 w-4" /> Print
+        </button>
+      </div>
+    </Modal>
+  );
+};
 
 const PaymentModal = ({ invoice, onClose }) => {
   const queryClient = useQueryClient();
@@ -158,7 +204,9 @@ const Fees = () => {
   const { can } = useAuth();
   const [tab, setTab] = useState('Invoices');
   const [paying, setPaying] = useState(null);
+  const [receipt, setReceipt] = useState(null);
   const [showStructure, setShowStructure] = useState(false);
+  const [reminderMsg, setReminderMsg] = useState('');
   const queryClient = useQueryClient();
 
   const { data: termsData } = useQuery({
@@ -212,6 +260,14 @@ const Fees = () => {
     },
   });
 
+  const runReminders = useMutation({
+    mutationFn: () => api.post('/fees/reminders/run', null, { params: { termId: effectiveTerm } }),
+    onSuccess: (res) => {
+      setReminderMsg(res.data.message);
+      setTimeout(() => setReminderMsg(''), 5000);
+    },
+  });
+
   const classes = classesData?.classes || [];
   const terms = termsData?.terms || [];
 
@@ -225,7 +281,15 @@ const Fees = () => {
             <button className="btn-primary" onClick={() => setShowStructure(true)}>New fee structure</button>
           )
         }
+        actions={
+          can('fees.remind') && effectiveTerm && (
+            <button className="btn-secondary" onClick={() => runReminders.mutate()} disabled={runReminders.isPending}>
+              <BellRing className="h-4 w-4" /> {runReminders.isPending ? 'Sending…' : 'Run fee reminders'}
+            </button>
+          )
+        }
       />
+      {reminderMsg && <p className="mb-4 rounded-lg bg-sky-50 px-4 py-2 text-sm text-sky-700">{reminderMsg}</p>}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <select className="input max-w-44" value={effectiveTerm} onChange={(e) => setTermId(e.target.value)}>
@@ -302,7 +366,12 @@ const Fees = () => {
                       <span className="ml-2 font-mono text-xs text-slate-400">{inv.student.admissionNo}</span>
                     </td>
                     <td className="td">{inv.student.currentClass?.name || '—'}</td>
-                    <td className="td">{formatMoney(inv.amountTotal)}</td>
+                    <td className="td">
+                      {formatMoney(inv.amountTotal)}
+                      {(inv.installments || []).length > 0 && (
+                        <span className="ml-1 text-[10px] text-slate-400">({inv.installments.length} inst.)</span>
+                      )}
+                    </td>
                     <td className="td text-emerald-600">{formatMoney(inv.amountPaid)}</td>
                     <td className="td font-semibold text-red-600">{formatMoney(inv.balance)}</td>
                     <td className="td"><Badge tone={STATUS_TONE[inv.status]}>{inv.status}</Badge></td>
@@ -323,31 +392,47 @@ const Fees = () => {
 
       {tab === 'Debtors' && (
         !debtorsData || debtorsData.debtors.length === 0 ? <EmptyState message="No debtors — everyone is up to date" /> : (
-          <div className="card overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-slate-200 bg-slate-50">
-                <tr>
-                  <th className="th">Pupil</th>
-                  <th className="th">Class</th>
-                  <th className="th">Guardian contact</th>
-                  <th className="th">Balance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {debtorsData.debtors.map((inv) => (
-                  <tr key={inv.id}>
-                    <td className="td font-medium">{inv.student.lastName}, {inv.student.firstName}</td>
-                    <td className="td">{inv.student.currentClass?.name || '—'}</td>
-                    <td className="td text-slate-500">{(inv.student.guardians || []).map((g) => g.phone).join(', ') || '—'}</td>
-                    <td className="td font-semibold text-red-600">{formatMoney(inv.balance)}</td>
+          <>
+            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {Object.entries(debtorsData.ageing).map(([bucket, amount]) => (
+                <StatCard
+                  key={bucket}
+                  label={BUCKET_LABELS[bucket] || bucket}
+                  value={formatMoney(amount)}
+                  tone={bucket === 'not_due' ? 'text-slate-800' : bucket === '60_plus' ? 'text-red-600' : 'text-amber-600'}
+                />
+              ))}
+            </div>
+            <div className="card overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-slate-200 bg-slate-50">
+                  <tr>
+                    <th className="th">Pupil</th>
+                    <th className="th">Class</th>
+                    <th className="th">Guardian contact</th>
+                    <th className="th">Due date</th>
+                    <th className="th">Ageing</th>
+                    <th className="th">Balance</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="border-t px-4 py-3 text-sm font-semibold">
-              Total outstanding: <span className="text-red-600">{formatMoney(debtorsData.totalOutstanding)}</span>
-            </p>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {debtorsData.debtors.map((inv) => (
+                    <tr key={inv.id}>
+                      <td className="td font-medium">{inv.student.lastName}, {inv.student.firstName}</td>
+                      <td className="td">{inv.student.currentClass?.name || '—'}</td>
+                      <td className="td text-slate-500">{(inv.student.guardians || []).map((g) => g.phone).join(', ') || '—'}</td>
+                      <td className="td text-slate-500">{formatDate(inv.dueDate)}</td>
+                      <td className="td"><Badge tone={inv.bucket === 'not_due' ? 'blue' : inv.bucket === '60_plus' ? 'red' : 'amber'}>{BUCKET_LABELS[inv.bucket]}</Badge></td>
+                      <td className="td font-semibold text-red-600">{formatMoney(inv.balance)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="border-t px-4 py-3 text-sm font-semibold">
+                Total outstanding: <span className="text-red-600">{formatMoney(debtorsData.totalOutstanding)}</span>
+              </p>
+            </div>
+          </>
         )
       )}
 
@@ -361,9 +446,8 @@ const Fees = () => {
                   <th className="th">Date</th>
                   <th className="th">Pupil</th>
                   <th className="th">Method</th>
-                  <th className="th">Reference</th>
                   <th className="th">Amount</th>
-                  <th className="th">Recorded by</th>
+                  <th className="th"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -373,9 +457,12 @@ const Fees = () => {
                     <td className="td text-slate-500">{formatDate(p.paidAt)}</td>
                     <td className="td font-medium">{p.invoice.student.lastName}, {p.invoice.student.firstName}</td>
                     <td className="td"><Badge tone={p.method === 'MOMO' ? 'blue' : 'slate'}>{p.method}</Badge></td>
-                    <td className="td text-slate-500">{p.reference || '—'}</td>
                     <td className="td font-semibold text-emerald-600">{formatMoney(p.amount)}</td>
-                    <td className="td text-slate-500">{p.recordedBy?.name || '—'}</td>
+                    <td className="td">
+                      <button className="text-sm font-medium text-brand-600 hover:underline" onClick={() => setReceipt(p)}>
+                        Receipt
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -385,6 +472,7 @@ const Fees = () => {
       )}
 
       {paying && <PaymentModal invoice={paying} onClose={() => setPaying(null)} />}
+      {receipt && <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />}
       {showStructure && <StructureModal open onClose={() => setShowStructure(false)} classes={classes} terms={terms} />}
     </div>
   );

@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState } from '../components/ui';
-import { useAuth } from '../context/AuthContext';
+import { PageHeader, Spinner, EmptyState, Modal } from '../components/ui';
 
 const ScoreEntry = () => {
-  const { can } = useAuth();
   const [classId, setClassId] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [scores, setScores] = useState({});
   const [saved, setSaved] = useState(false);
+  const [showCorrection, setShowCorrection] = useState(false);
+  const [correction, setCorrection] = useState({ studentId: '', assessmentTypeId: '', newScore: '', reason: '' });
+  const [correctionMsg, setCorrectionMsg] = useState('');
+  const queryClient = useQueryClient();
 
   const { data: classesData } = useQuery({
     queryKey: ['classes'],
@@ -49,6 +51,7 @@ const ScoreEntry = () => {
       }),
     onSuccess: () => {
       setSaved(true);
+      queryClient.invalidateQueries({ queryKey: ['sheet'] });
       setTimeout(() => setSaved(false), 2500);
     },
   });
@@ -75,12 +78,27 @@ const ScoreEntry = () => {
       <PageHeader
         title="Score entry"
         subtitle="Enter raw scores — totals, grades and positions are computed automatically"
-        actions={can('grades.enter') && data?.students.length > 0 && (
-          <button className="btn-primary" onClick={submit} disabled={save.isPending}>
-            {save.isPending ? 'Saving…' : saved ? 'Saved ✓' : 'Save scores'}
-          </button>
-        )}
+        actions={
+          data?.students.length > 0 && (
+            data.locked ? (
+              <button className="btn-secondary" onClick={() => setShowCorrection(true)}>
+                Request score correction
+              </button>
+            ) : (
+              <button className="btn-primary" onClick={submit} disabled={save.isPending}>
+                {save.isPending ? 'Saving…' : saved ? 'Saved ✓' : 'Save scores'}
+              </button>
+            )
+          )
+        }
       />
+
+      {data?.locked && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          Results for this class and term are <strong>locked</strong>. Scores cannot be edited directly —
+          use “Request score correction” to propose a change for approval. All changes are audit-logged.
+        </div>
+      )}
       {save.isError && (
         <p className="mb-4 text-sm text-red-600">{getErrorMessage(save.error)}</p>
       )}
@@ -153,6 +171,71 @@ const ScoreEntry = () => {
             <p className="border-t px-4 py-2 text-xs text-slate-400">Subject teacher: {data.teacher.name}</p>
           )}
         </div>
+      )}
+
+      {showCorrection && data && (
+        <Modal open onClose={() => setShowCorrection(false)} title="Request score correction">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setCorrectionMsg('');
+              try {
+                await api.post('/operations/corrections', {
+                  studentId: Number(correction.studentId),
+                  subjectId: Number(subjectId),
+                  termId: Number(effectiveTerm),
+                  assessmentTypeId: Number(correction.assessmentTypeId),
+                  newScore: Number(correction.newScore),
+                  reason: correction.reason,
+                });
+                setCorrectionMsg('Request submitted — an approver will review it.');
+                setCorrection({ studentId: '', assessmentTypeId: '', newScore: '', reason: '' });
+                queryClient.invalidateQueries({ queryKey: ['corrections'] });
+              } catch (err) {
+                setCorrectionMsg(getErrorMessage(err));
+              }
+            }}
+            className="space-y-4"
+          >
+            {correctionMsg && <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">{correctionMsg}</p>}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="label">Pupil *</label>
+                <select className="input" value={correction.studentId} onChange={(e) => setCorrection((c) => ({ ...c, studentId: e.target.value }))} required>
+                  <option value="">Select…</option>
+                  {data.students.map((s) => (
+                    <option key={s.id} value={s.id}>{s.lastName}, {s.firstName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Assessment *</label>
+                <select className="input" value={correction.assessmentTypeId} onChange={(e) => setCorrection((c) => ({ ...c, assessmentTypeId: e.target.value }))} required>
+                  <option value="">Select…</option>
+                  {data.assessmentTypes.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.weight}%)</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Corrected score * (current scores shown above)</label>
+                <input className="input" type="number" min="0" max="100" value={correction.newScore} onChange={(e) => setCorrection((c) => ({ ...c, newScore: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="label">Reason * (min 5 characters)</label>
+                <input className="input" value={correction.reason} onChange={(e) => setCorrection((c) => ({ ...c, reason: e.target.value }))} required minLength={5} />
+              </div>
+            </div>
+            <p className="text-xs text-slate-400">
+              Your request goes to an approver (headteacher/proprietor). If approved, the score is
+              updated and the report card recomputed — all audit-logged.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button type="button" className="btn-secondary" onClick={() => setShowCorrection(false)}>Close</button>
+              <button className="btn-primary">Submit request</button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

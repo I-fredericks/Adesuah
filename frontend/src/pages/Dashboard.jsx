@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
-import { PageHeader, StatCard, Badge, Spinner } from '../components/ui';
+import { PageHeader, StatCard, Badge, Spinner, Card } from '../components/ui';
 import { formatMoney, formatDate, termLabel } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,6 +16,7 @@ const Dashboard = () => {
   if (error) return <p className="text-sm text-red-600">{error.response?.data?.message}</p>;
 
   const fees = data.fees || {};
+  const sections = data.sections || {};
 
   return (
     <div>
@@ -29,17 +30,73 @@ const Dashboard = () => {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Active students" value={data.students.active} sub={`${data.students.male} boys · ${data.students.female} girls`} />
-        <StatCard label="Attendance today" value={data.attendanceToday.rate !== null ? `${data.attendanceToday.rate}%` : 'Not marked'} sub={`${data.attendanceToday.present}/${data.attendanceToday.marked} present`} />
-        <StatCard label="Collected this term" value={formatMoney(fees.collected)} sub={`${fees.collectionRate || 0}% of ${formatMoney(fees.expected)}`} tone="text-emerald-600" />
-        <StatCard label="Outstanding" value={formatMoney(fees.outstanding)} sub={`${fees.debtorsCount || 0} unpaid invoices`} tone="text-red-600" />
+        {sections.enrollment && (
+          <StatCard label="Active students" value={data.students.active} sub={`${data.students.male} boys · ${data.students.female} girls`} />
+        )}
+        {sections.attendanceOverview && (
+          <StatCard label="Pupil attendance today" value={data.attendanceToday.rate !== null ? `${data.attendanceToday.rate}%` : 'Not marked'} sub={`${data.attendanceToday.present}/${data.attendanceToday.marked} present`} />
+        )}
+        {sections.staffAttendance && data.staffAttendanceToday && (
+          <StatCard label="Staff attendance today" value={data.staffAttendanceToday.rate !== null ? `${data.staffAttendanceToday.rate}%` : 'Not marked'} sub={`${data.staffAttendanceToday.present}/${data.staffAttendanceToday.marked} present`} />
+        )}
+        {sections.finances && (
+          <>
+            <StatCard label="Collected this term" value={formatMoney(fees.collected)} sub={`${fees.collectionRate || 0}% of ${formatMoney(fees.expected)}`} tone="text-emerald-600" />
+            <StatCard label="Outstanding" value={formatMoney(fees.outstanding)} sub={`${fees.debtorsCount || 0} unpaid invoices`} tone="text-red-600" />
+          </>
+        )}
       </div>
+
+      {data.myClasses && (
+        <div className="mt-6">
+          <h2 className="mb-3 font-semibold">My classes</h2>
+          {data.myClasses.length === 0 ? (
+            <p className="text-sm text-slate-400">No classes assigned to you yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {data.myClasses.map((c) => (
+                <Link key={c.id} to={`/attendance?classId=${c.id}`} className="card p-4 transition hover:shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">{c.name}</span>
+                    <Badge tone={c.attendanceMarkedToday ? 'green' : 'amber'}>
+                      {c.attendanceMarkedToday ? 'Marked today' : 'Attendance due'}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-500">{c.students} pupils</p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {sections.scoreGaps && data.scoreGaps?.length > 0 && (
+        <Card className="mt-6 p-5">
+          <h2 className="mb-3 font-semibold">Scores not yet submitted</h2>
+          <div className="flex flex-wrap gap-2">
+            {data.scoreGaps.map((g, i) => (
+              <span key={i} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-800">
+                {g.className} · {g.subject}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {sections.corrections && data.correctionsPending > 0 && (
+        <Link to="/corrections" className="card mt-6 flex items-center justify-between border-amber-300 bg-amber-50 p-5 transition hover:shadow-md">
+          <span className="font-semibold text-amber-900">
+            {data.correctionsPending} result correction request{data.correctionsPending > 1 ? 's' : ''} awaiting your decision
+          </span>
+          <Badge tone="amber">Review →</Badge>
+        </Link>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold">Enrollment by class</h2>
-            <Link to="/students" className="text-sm text-brand-600 hover:underline">All students</Link>
+            {sections.enrollment && <Link to="/students" className="text-sm text-brand-600 hover:underline">All students</Link>}
           </div>
           {data.enrollmentByClass.length === 0 ? (
             <p className="py-6 text-center text-sm text-slate-400">No students enrolled yet</p>
@@ -68,11 +125,11 @@ const Dashboard = () => {
         <div className="space-y-6">
           <div className="card p-5">
             <h2 className="mb-3 font-semibold">Recent payments</h2>
-            {data.recentPayments.length === 0 ? (
+            {sections.finances && (data.recentPayments || []).length === 0 ? (
               <p className="py-4 text-center text-sm text-slate-400">No payments recorded yet</p>
             ) : (
               <ul className="space-y-2.5">
-                {data.recentPayments.map((p) => (
+                {(data.recentPayments || []).map((p) => (
                   <li key={p.id} className="flex items-center justify-between text-sm">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{p.student?.firstName} {p.student?.lastName}</p>

@@ -2,12 +2,56 @@ const prisma = require('../config/db');
 const { resolveSchoolId, resolveClassScope } = require('../middlewares/authMiddleware');
 const { computeClassResults, publishClassReports } = require('../services/reportService');
 const { hasPermission } = require('../utils/permissions');
+const { audit } = require('../services/auditService');
 
 const publishReports = async (req, res) => {
   const schoolId = resolveSchoolId(req);
   const { classId, termId } = req.body;
-  const { published } = await publishClassReports(schoolId, classId, termId);
-  res.json({ message: `Published ${published} report cards`, published });
+  const { published, skippedLocked } = await publishClassReports(schoolId, classId, termId);
+  audit({
+    schoolId,
+    userId: req.user.id,
+    action: 'REPORTS_PUBLISH',
+    entity: 'reportCard',
+    entityId: `class:${classId}:term:${termId}`,
+    after: { published, skippedLocked },
+  });
+  res.json({
+    message: `Published ${published} report cards${skippedLocked ? ` (${skippedLocked} locked cards left untouched)` : ''}`,
+    published,
+    skippedLocked,
+  });
+};
+
+// Lock (or unlock) every published report card of a class+term. Locked results
+// reject direct score edits and remark edits; changes go through corrections.
+const lockReports = async (req, res) => {
+  const schoolId = resolveSchoolId(req);
+  const { classId, termId, locked } = req.body;
+
+  const where = { schoolId, classId, termId, published: true };
+  const result = await prisma.reportCard.updateMany({
+    where,
+    data: locked
+      ? { locked: true, lockedAt: new Date(), lockedById: req.user.id }
+      : { locked: false, lockedAt: null, lockedById: null },
+  });
+
+  audit({
+    schoolId,
+    userId: req.user.id,
+    action: locked ? 'REPORTS_LOCK' : 'REPORTS_UNLOCK',
+    entity: 'reportCard',
+    entityId: `class:${classId}:term:${termId}`,
+    after: { locked, count: result.count },
+  });
+
+  res.json({
+    message: locked
+      ? `Locked ${result.count} report cards. Score edits now require a correction request.`
+      : `Unlocked ${result.count} report cards.`,
+    count: result.count,
+  });
 };
 
 const getStudentReport = async (req, res) => {
@@ -142,6 +186,11 @@ const updateRemarks = async (req, res) => {
     where: { id: Number(req.params.id), schoolId },
   });
   if (!reportCard) return res.status(404).json({ message: 'Report card not found' });
+  if (reportCard.locked) {
+    return res.status(423).json({
+      message: 'This report card is locked. Unlock the class results or use the correction workflow.',
+    });
+  }
 
   const updated = await prisma.reportCard.update({
     where: { id: reportCard.id },
@@ -158,4 +207,4 @@ const updateRemarks = async (req, res) => {
   res.json({ reportCard: updated });
 };
 
-module.exports = { publishReports, getStudentReport, getClassReports, getBroadsheet, updateRemarks };
+module.exports = { publishReports, lockReports, getStudentReport, getClassReports, getBroadsheet, updateRemarks };

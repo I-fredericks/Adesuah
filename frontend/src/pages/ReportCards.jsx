@@ -10,6 +10,7 @@ const ReportCards = () => {
   const [classId, setClassId] = useState('');
   const [termId, setTermId] = useState('');
   const [studentId, setStudentId] = useState('');
+  const [locked, setLocked] = useState(false);
   const queryClient = useQueryClient();
   const [publishMsg, setPublishMsg] = useState('');
 
@@ -37,6 +38,16 @@ const ReportCards = () => {
     },
   });
 
+  const lock = useMutation({
+    mutationFn: (lockIt) =>
+      api.post('/reports/lock', { classId: Number(classId), termId: Number(termId), locked: lockIt }),
+    onSuccess: (res) => {
+      setLocked(!!res.config.data && JSON.parse(res.config.data).locked);
+      setPublishMsg(res.data.message);
+      setTimeout(() => setPublishMsg(''), 5000);
+    },
+  });
+
   const { data: report } = useQuery({
     queryKey: ['report', studentId, termId],
     queryFn: () => api.get(`/reports/student/${studentId}`, { params: { termId } }).then((r) => r.data),
@@ -51,13 +62,18 @@ const ReportCards = () => {
         <PageHeader
           title="Report cards"
           subtitle="Preview computed results, then publish to freeze official report cards"
-          actions={
-            can('reports.publish') && classId && termId && (
+        actions={
+          can('reports.publish') && classId && termId && (
+            <div className="flex gap-2">
+              <button className="btn-secondary" onClick={() => lock.mutate(!locked)} disabled={lock.isPending}>
+                {lock.isPending ? 'Working…' : locked ? 'Unlock results' : 'Lock results'}
+              </button>
               <button className="btn-primary" onClick={() => publish.mutate()} disabled={publish.isPending}>
                 {publish.isPending ? 'Publishing…' : 'Publish class reports'}
               </button>
-            )
-          }
+            </div>
+          )
+        }
         />
         {publishMsg && <p className="mb-4 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">{publishMsg}</p>}
         {publish.isError && <p className="mb-4 text-sm text-red-600">{getErrorMessage(publish.error)}</p>}

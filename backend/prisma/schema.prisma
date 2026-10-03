@@ -56,6 +56,9 @@ model School {
   announcements   Announcement[]
   notifications   Notification[]
   rolePermissions RolePermission[]
+  auditLogs       AuditLog[]
+  corrections     ResultCorrection[]
+  staffAttendance StaffAttendance[]
 
   @@map("school")
 }
@@ -85,6 +88,12 @@ model User {
   guardianOf        Guardian[]
   paymentsRecorded  Payment[]
   classesLed        SchoolClass[]
+  lockedReportCards ReportCard[]   @relation("ReportCardLocker")
+  auditLogs         AuditLog[]
+  correctionsRequested ResultCorrection[] @relation("CorrectionRequester")
+  correctionsDecided   ResultCorrection[] @relation("CorrectionDecider")
+  staffAttendance      StaffAttendance[]
+  staffAttendanceMarked StaffAttendance[] @relation("StaffAttendanceMarker")
 
   @@index([schoolId, role])
   @@map("user")
@@ -116,6 +125,87 @@ model RolePermission {
   @@unique([schoolId, role, permission])
   @@index([schoolId, role])
   @@map("rolepermission")
+}
+
+// Tamper-evident trail for sensitive actions: score edits, result corrections,
+// payments, discounts, publish/lock, staff and permission changes.
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  schoolId  Int
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after    Json?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, createdAt])
+  @@index([schoolId, entity, entityId])
+  @@map("auditlog")
+}
+
+// Teacher requests a score change (with reason); approver grants or rejects.
+// Applied changes are written to Score and recorded in AuditLog.
+model ResultCorrection {
+  id               Int              @id @default(autoincrement())
+  schoolId         Int
+  school           School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId        Int
+  student          Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectId        Int
+  subject          Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  termId           Int
+  term             Term             @relation(fields: [termId], references: [id], onDelete: Cascade)
+  assessmentTypeId Int
+  assessmentType   AssessmentType   @relation(fields: [assessmentTypeId], references: [id], onDelete: Cascade)
+  oldScore         Float
+  newScore         Float
+  reason           String
+  status           CorrectionStatus @default(PENDING)
+  requestedById    Int?
+  requestedBy      User?            @relation("CorrectionRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  decidedById      Int?
+  decidedBy        User?            @relation("CorrectionDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedAt        DateTime?
+  decisionNote     String?
+  appliedAt        DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([schoolId, status])
+  @@index([studentId, termId])
+  @@map("resultcorrection")
+}
+
+enum CorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Daily staff (teacher/admin) attendance register.
+model StaffAttendance {
+  id         Int              @id @default(autoincrement())
+  schoolId   Int
+  school     School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime         @db.Date
+  status     AttendanceStatus
+  note       String?
+  markedById Int?
+  markedBy   User?            @relation("StaffAttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([schoolId, date])
+  @@map("staffattendance")
 }
 
 enum Plan {
@@ -193,6 +283,7 @@ model Term {
   scores        Score[]
   reportCards   ReportCard[]
   invoices      Invoice[]
+  corrections   ResultCorrection[]
 
   @@unique([academicYearId, name])
   @@index([schoolId, isCurrent])
@@ -251,7 +342,6 @@ model SchoolClass {
   attendance     AttendanceRecord[]
   scores         Score[]
   announcements  Announcement[]
-
   @@unique([schoolId, name])
   @@index([schoolId, levelId])
   @@map("schoolclass")
@@ -270,6 +360,7 @@ model Subject {
 
   classSubjects ClassSubject[]
   scores        Score[]
+  corrections   ResultCorrection[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
@@ -307,13 +398,13 @@ model AssessmentType {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  scores Score[]
+  scores      Score[]
+  corrections ResultCorrection[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
   @@map("assessmenttype")
 }
-
 model GradingScale {
   id         Int        @id @default(autoincrement())
   schoolId   Int
@@ -366,6 +457,7 @@ model Student {
   scores      Score[]
   reportCards ReportCard[]
   invoices    Invoice[]
+  corrections ResultCorrection[]
 
   @@unique([schoolId, admissionNo])
   @@index([schoolId, status])
@@ -529,9 +621,12 @@ model ReportCard {
   promotedTo     String?
   published      Boolean  @default(false)
   publishedAt    DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  locked         Boolean  @default(false)
+  lockedAt       DateTime?
+  lockedById     Int?
+  lockedBy       User?    @relation("ReportCardLocker", fields: [lockedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@unique([studentId, termId])
   @@index([schoolId, termId, classId])
@@ -592,13 +687,16 @@ model Invoice {
   discountAmount Decimal       @default(0) @db.Decimal(12, 2)
   amountPaid     Decimal       @default(0) @db.Decimal(12, 2)
   status         InvoiceStatus @default(UNPAID)
+  dueDate        DateTime?
+  lastRemindedAt DateTime?
   note           String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items    InvoiceItem[]
-  payments Payment[]
+  items        InvoiceItem[]
+  payments     Payment[]
+  installments InvoiceInstallment[]
 
   @@unique([studentId, termId])
   @@index([schoolId, termId, status])
@@ -617,6 +715,23 @@ model InvoiceItem {
 
   @@index([invoiceId])
   @@map("invoiceitem")
+}
+
+// Expected payment schedule for an invoice; payments are allocated across
+// instalments in due-date order to compute per-instalment balances.
+model InvoiceInstallment {
+  id        Int      @id @default(autoincrement())
+  invoiceId Int
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  dueDate   DateTime
+  amount    Decimal  @db.Decimal(12, 2)
+  label     String?  @default("Instalment")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([invoiceId, dueDate])
+  @@map("invoiceinstallment")
 }
 
 model Payment {

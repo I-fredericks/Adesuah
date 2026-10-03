@@ -1,7 +1,18 @@
 const prisma = require('../config/db');
-const { resolveSchoolId, assertClassAccess, resolveClassScope } = require('../middlewares/authMiddleware');
+const { resolveSchoolId, assertClassAccess } = require('../middlewares/authMiddleware');
 const { computeClassResults } = require('../services/reportService');
 const { hasPermission } = require('../utils/permissions');
+const { audit } = require('../services/auditService');
+
+// Locked report cards for a class+term block direct score edits; changes go
+// through the correction workflow instead.
+const getLockedClassTerm = async (schoolId, classId, termId) => {
+  const locked = await prisma.reportCard.findFirst({
+    where: { schoolId, classId, termId, locked: true },
+    select: { id: true },
+  });
+  return !!locked;
+};
 
 const resolveGradeScope = async (req, schoolId) => {
   if (req.user.role === 'SUPER_ADMIN') return null;
@@ -23,7 +34,7 @@ const getScoreSheet = async (req, res) => {
   }
   await assertClassAccess(req, schoolId, classId);
 
-  const [students, assessmentTypes, existingScores, classSubjects] = await Promise.all([
+  const [students, assessmentTypes, existingScores, classSubjects, locked] = await Promise.all([
     prisma.student.findMany({
       where: { schoolId, currentClassId: classId, status: 'ACTIVE' },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
@@ -38,6 +49,7 @@ const getScoreSheet = async (req, res) => {
       where: { schoolId, classId, subjectId },
       include: { teacher: { select: { id: true, name: true } } },
     }),
+    getLockedClassTerm(schoolId, classId, termId),
   ]);
 
   const key = (sid, atid) => `${sid}:${atid}`;
@@ -47,6 +59,7 @@ const getScoreSheet = async (req, res) => {
     classId,
     subjectId,
     termId,
+    locked,
     subject: classSubjects?.subject || null,
     teacher: classSubjects?.teacher || null,
     assessmentTypes,
@@ -74,6 +87,14 @@ const saveScores = async (req, res) => {
 
   await assertClassAccess(req, schoolId, classId);
 
+  if (await getLockedClassTerm(schoolId, classId, termId)) {
+    const err = new Error(
+      'Results for this class and term are locked. Submit a correction request instead.'
+    );
+    err.status = 423;
+    throw err;
+  }
+
   // Subject teachers may only edit marks for subjects actually assigned to them
   // unless they hold grades.edit_any (headteacher, coordinator, proprietor).
   if (!hasPermission(req._permissions || [], 'grades.edit_any') && req.user.role !== 'SUPER_ADMIN') {
@@ -84,6 +105,33 @@ const saveScores = async (req, res) => {
       const err = new Error('This subject is not assigned to you');
       err.status = 403;
       throw err;
+    }
+  }
+
+  // Audit trail: record every change to an existing score (before → after).
+  for (const e of entries) {
+    if (e.rawScore === null || e.rawScore === undefined) continue;
+    const existing = await prisma.score.findUnique({
+      where: {
+        studentId_subjectId_termId_assessmentTypeId: {
+          studentId: e.studentId,
+          subjectId,
+          termId,
+          assessmentTypeId: e.assessmentTypeId,
+        },
+      },
+      select: { id: true, rawScore: true },
+    });
+    if (existing && existing.rawScore !== e.rawScore) {
+      audit({
+        schoolId,
+        userId: req.user.id,
+        action: 'SCORE_EDIT',
+        entity: 'score',
+        entityId: existing.id,
+        before: { rawScore: existing.rawScore },
+        after: { rawScore: e.rawScore },
+      });
     }
   }
 

@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const reports = require('../controllers/reportController');
 const { protect, requireStaff, requirePermission, resolveSchoolId } = require('../middlewares/authMiddleware');
-const { validate, publishReportsSchema, remarksSchema } = require('../middlewares/validation');
+const { validate, publishReportsSchema, remarksSchema, reportsLockSchema } = require('../middlewares/validation');
 
 router.use(protect, requireStaff);
 
 router.post('/publish', requirePermission('reports.publish'), validate(publishReportsSchema), reports.publishReports);
+router.post('/lock', requirePermission('reports.publish'), validate(reportsLockSchema), reports.lockReports);
 router.get('/student/:studentId', requirePermission('reports.view'), reports.getStudentReport);
 router.get('/class', requirePermission('reports.view'), reports.getClassReports);
 router.get('/broadsheet', requirePermission('reports.view'), reports.getBroadsheet);
