@@ -1,3 +1,4 @@
+import { useAuth } from '../context/AuthContext';
 import { Spinner } from './ui';
 
 const ProtectedRoute = ({ children, require }) => {
