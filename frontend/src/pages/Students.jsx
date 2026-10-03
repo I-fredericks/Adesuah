@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, Badge, Spinner, EmptyState, Modal, ErrorNote } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
+import { formatDate } from '../utils/format';
 
 const AddStudentModal = ({ open, onClose, classes }) => {
   const queryClient = useQueryClient();
