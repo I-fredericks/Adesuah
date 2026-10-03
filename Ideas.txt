@@ -1,0 +1,11 @@
+-------- New Ideas About The System ----------
+
+School Ouwner should be able to update their term calander when school will resume and vacate for the semister.
+Finace office should be able to update term fees for every class
+Teachear and stuffs should be able to see how much their being paid in the school
+Head tearches should eb able the add some like morning extra classes and also manage it on the systemm and also modify and terminate it if i not working or they stoped it.
+Teaches should be able to give or assign assignment for the class on the system so if student fail to tell their parent the parent can check their wards account and see if they were given one or not.
+When some logs in should give me profile with his anme and picture box so on the setting user should be able to upload their profile picture on change their name and update passowerd and stuf and as for student teacher and parent should be able to update the wards profile pic.
+And on the Permision and roles when a teacher logs in he should adle see what he is allowed to perform on Owener and high and ranked administrators can see everyuser role and for that make it more like for a non tech person can get it straight forward.
+Default role update should be only teacher should be able to update schole for wards and teachers must be assign a class and a specfic subject or all all subject by the right staff
+And the right staff shoud get the audit for what he suppose to get or look over like head teacher and headmaster should get audio on his dashbord for the what upload result, when and which subject and staff to manage the school properly

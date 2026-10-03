@@ -10,7 +10,10 @@
     "dev": "nodemon src/index.js",
     "seed": "node prisma/seed.js",
     "backfill:perms": "node scripts/backfill-permissions.js",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:start": "/usr/lib/postgresql/18/bin/pg_ctl -D $HOME/adesuah-pgdata -l $HOME/adesuah-pgdata/pg.log -o \"-p 5432 -k $HOME/adesuah-pgdata\" start",
+    "db:stop": "/usr/lib/postgresql/18/bin/pg_ctl -D $HOME/adesuah-pgdata stop",
+    "db:status": "pg_isready -h localhost -p 5432"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
