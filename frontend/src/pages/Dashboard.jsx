@@ -6,7 +6,11 @@ import { formatMoney, formatDate, termLabel } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
-  const { school } = useAuth();
+  const { user, school } = useAuth();
+  if (user?.role === 'PARENT') {
+    window.location.href = '/portal';
+    return null;
+  }
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => api.get('/dashboard').then((r) => r.data),

@@ -39,7 +39,7 @@ const RegisterSchool = () => {
           password: form.password,
         },
       });
-      window.location.href = '/dashboard';
+      window.location.href = res.user?.role === 'PARENT' ? '/portal' : '/dashboard';
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {

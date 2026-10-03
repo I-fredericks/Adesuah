@@ -106,6 +106,27 @@ check on teacher double-booking; printable; feeds teacher dashboard "my day".
 *Build:* PARENT role guard → "My children" screen: attendance, fee balance, published
 report cards, announcements. Strictly scoped by Guardian links (never another child).
 *Effort:* M
+**Status: SHIPPED** — `/portal` (children, per-child attendance/fees/published reports,
+class + school announcements), parents land there directly after login.
+
+### 8b. Parent notifications — plan 🟡 PARTIALLY SHIPPED
+What works today:
+- **In-app realtime push (SSE)**: logged-in parents receive live notifications for fee
+  reminders, absence alerts and school/class announcements (notification bell + feed).
+- **SMS fallback** to all guardian phones (works without a parent account) for fee
+  reminders and absence alerts.
+
+To reach parents who aren't logged in, in order of implementation:
+1. **Web Push (PWA service worker + VAPID)** — prompt parents to "Enable notifications"
+   on first portal visit; store the subscription per device; server pushes on
+   absence/alert/meeting/fee events. No app store needed, works on Android Chrome and
+   installed PWAs on iOS 16.4+. *(next sprint)*
+2. **WhatsApp deep links now, WhatsApp Cloud API later** — receipts already share via
+   wa.me; Cloud API gives delivery-receipted bulk sends for meetings/closures. *(Tier 2)*
+3. **Email (Resend)** for parents with email addresses. *(later)*
+4. **FCM + Android app** only if web push proves insufficient. *(Tier 3)*
+Notification events to wire: absence today, fee due/overdue, new published report card,
+PTA meeting announcement, exam timetable release, school closure.
 
 ### 9. Audit logs & backups 🟡 EXTEND
 *Why:* weak governance; children's data; Data Protection Act posture.

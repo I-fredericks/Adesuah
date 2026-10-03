@@ -15,8 +15,8 @@ const Login = () => {
     setError('');
     setBusy(true);
     try {
-      await login(identifier, password);
-      window.location.href = '/dashboard';
+      const res = await login(identifier, password);
+      window.location.href = res.user?.role === 'PARENT' ? '/portal' : '/dashboard';
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {
