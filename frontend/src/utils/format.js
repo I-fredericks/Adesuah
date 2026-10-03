@@ -26,3 +26,28 @@ export const ordinalSuffixClient = (n) => {
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
+
+export const ROLE_LABELS = {
+  SUPER_ADMIN: 'Platform Admin',
+  OWNER: 'Proprietor / Owner',
+  ADMIN: 'Administrator (legacy)',
+  HEADTEACHER: 'Headteacher',
+  DEPUTY_HEAD: 'Deputy Head',
+  ACADEMIC_COORDINATOR: 'Academic Coordinator',
+  TEACHER: 'Teacher',
+  ACCOUNTANT: 'Accountant / Bursar',
+  SECRETARY: 'Secretary / Administrator',
+  SUPPORT_STAFF: 'Support Staff',
+  PARENT: 'Parent / Guardian',
+};
+
+export const STAFF_ROLE_OPTIONS = [
+  'HEADTEACHER',
+  'DEPUTY_HEAD',
+  'ACADEMIC_COORDINATOR',
+  'TEACHER',
+  'ACCOUNTANT',
+  'SECRETARY',
+  'SUPPORT_STAFF',
+  'OWNER',
+];

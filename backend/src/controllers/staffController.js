@@ -1,8 +1,7 @@
 const bcrypt = require('bcrypt');
 const prisma = require('../config/db');
 const { resolveSchoolId } = require('../middlewares/authMiddleware');
-
-const STAFF_ROLES = ['OWNER', 'ADMIN', 'TEACHER', 'ACCOUNTANT'];
+const { STAFF_ROLES } = require('../utils/permissions');
 
 const listStaff = async (req, res) => {
   const schoolId = resolveSchoolId(req);

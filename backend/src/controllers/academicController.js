@@ -1,7 +1,42 @@
 const prisma = require('../config/db');
 const { resolveSchoolId } = require('../middlewares/authMiddleware');
+const permissionService = require('../services/permissionService');
+const { CATALOG, ROLE_LABELS, normalizeRole, DEFAULT_ROLE_PERMISSIONS } = require('../utils/permissions');
 
 const setDate = (v) => (v ? new Date(v) : undefined);
+
+// ── Roles & permissions ──
+
+const getPermissionMatrix = async (req, res) => {
+  const schoolId = resolveSchoolId(req);
+  const matrix = await permissionService.getSchoolPermissionMatrix(schoolId);
+  res.json({
+    catalog: CATALOG,
+    matrix,
+    roleLabels: ROLE_LABELS,
+    defaults: DEFAULT_ROLE_PERMISSIONS,
+  });
+};
+
+const setRolePerms = async (req, res) => {
+  const schoolId = resolveSchoolId(req);
+  const role = normalizeRole(req.params.role);
+  if (!(role in DEFAULT_ROLE_PERMISSIONS)) {
+    return res.status(400).json({ message: 'Unknown role' });
+  }
+  const permissions = await permissionService.setRolePermissions(schoolId, role, req.body.permissions);
+  res.json({ role, permissions });
+};
+
+const resetRolePerms = async (req, res) => {
+  const schoolId = resolveSchoolId(req);
+  const role = normalizeRole(req.params.role);
+  if (!(role in DEFAULT_ROLE_PERMISSIONS)) {
+    return res.status(400).json({ message: 'Unknown role' });
+  }
+  const permissions = await permissionService.resetRolePermissions(schoolId, role);
+  res.json({ role, permissions, message: `${ROLE_LABELS[role]} permissions reset to defaults` });
+};
 
 // ── Academic years ──
 
@@ -401,6 +436,9 @@ const setGradingScale = async (req, res) => {
 };
 
 module.exports = {
+  getPermissionMatrix,
+  setRolePerms,
+  resetRolePerms,
   listYears,
   createYear,
   updateYear,

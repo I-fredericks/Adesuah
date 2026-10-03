@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const { seedRolePermissions } = require('./permissionService');
 
 const DEFAULT_LEVELS = [
   { name: 'KG 1', code: 'KG1', stage: 'KG', order: 1 },
@@ -97,6 +98,8 @@ const uniqueSlug = async (base) => {
 
 const seedSchoolDefaults = async (schoolId, academicYearOptions = {}) => {
   const year = { ...defaultAcademicYear(), ...academicYearOptions };
+
+  await seedRolePermissions(schoolId);
 
   const levels = await Promise.all(
     DEFAULT_LEVELS.map((l) =>

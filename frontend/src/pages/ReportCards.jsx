@@ -3,8 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, EmptyState } from '../components/ui';
 import { formatDate, termLabel, ordinalSuffixClient } from '../utils/format';
+import { useAuth } from '../context/AuthContext';
 
 const ReportCards = () => {
+  const { can } = useAuth();
   const [classId, setClassId] = useState('');
   const [termId, setTermId] = useState('');
   const [studentId, setStudentId] = useState('');
@@ -50,7 +52,7 @@ const ReportCards = () => {
           title="Report cards"
           subtitle="Preview computed results, then publish to freeze official report cards"
           actions={
-            classId && termId && (
+            can('reports.publish') && classId && termId && (
               <button className="btn-primary" onClick={() => publish.mutate()} disabled={publish.isPending}>
                 {publish.isPending ? 'Publishing…' : 'Publish class reports'}
               </button>

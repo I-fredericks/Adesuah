@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 const StudentDetail = () => {
   const { id } = useParams();
-  const { isManagement } = useAuth();
+  const { can } = useAuth();
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
 
@@ -41,7 +41,7 @@ const StudentDetail = () => {
         title={`${s.firstName} ${s.otherNames || ''} ${s.lastName}`.trim()}
         subtitle={`${s.admissionNo} · ${s.currentClass?.name || 'No class'} · Enrolled ${formatDate(s.enrolledAt)}`}
         actions={
-          isManagement && (
+          can('students.status') && (
             <select
               className="input w-40"
               value={s.status}

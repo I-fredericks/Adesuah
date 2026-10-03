@@ -7,7 +7,7 @@ import { formatDate, audienceLabel } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
 const Announcements = () => {
-  const { isManagement } = useAuth();
+  const { can } = useAuth();
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ title: '', body: '', audience: 'ALL', classId: '', sendSms: false });
@@ -44,7 +44,7 @@ const Announcements = () => {
         title="Announcements"
         subtitle="Notices reach staff and guardians in-app (and by SMS where configured)"
         actions={
-          isManagement && (
+          can('announcements.send') && (
             <button className="btn-primary" onClick={() => setShowNew(true)}>
               <Megaphone className="h-4 w-4" /> New announcement
             </button>
@@ -72,7 +72,7 @@ const Announcements = () => {
                     {a.author?.name || 'System'} · {formatDate(a.createdAt)}
                   </p>
                 </div>
-                {isManagement && (
+                {can('announcements.send') && (
                   <button
                     className="text-slate-300 hover:text-red-500"
                     onClick={() => remove.mutate(a.id)}

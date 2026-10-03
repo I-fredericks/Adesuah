@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, Spinner, EmptyState, Badge, Modal, ErrorNote } from '../components/ui';
-import { formatDate } from '../utils/format';
+import { formatDate, ROLE_LABELS, STAFF_ROLE_OPTIONS } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
 const Staff = () => {
-  const { isManagement } = useAuth();
+  const { can } = useAuth();
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: '', role: 'TEACHER', email: '', phone: '', password: '', position: '' });
@@ -45,7 +45,7 @@ const Staff = () => {
         title="Staff"
         subtitle="Teachers, bursars and administrators"
         actions={
-          isManagement && (
+          can('staff.manage') && (
             <button className="btn-primary" onClick={() => setShowAdd(true)}>Add staff</button>
           )
         }
@@ -81,8 +81,8 @@ const Staff = () => {
                 <tr key={st.id} className="hover:bg-slate-50">
                   <td className="td font-medium">{st.name}</td>
                   <td className="td">
-                    <Badge tone={st.role === 'OWNER' ? 'blue' : st.role === 'ADMIN' ? 'amber' : 'slate'}>
-                      {st.role}
+                    <Badge tone={st.role === 'OWNER' ? 'blue' : ['HEADTEACHER', 'DEPUTY_HEAD', 'ACADEMIC_COORDINATOR'].includes(st.role) ? 'amber' : 'slate'}>
+                      {ROLE_LABELS[st.role] || st.role}
                     </Badge>
                   </td>
                   <td className="td text-slate-500">{st.email || st.phone || '—'}</td>
@@ -93,15 +93,19 @@ const Staff = () => {
                   </td>
                   <td className="td">
                     <div className="flex gap-3 text-sm">
-                      <button
-                        className="text-brand-600 hover:underline"
-                        onClick={() => toggleActive.mutate({ id: st.id, isActive: !st.isActive })}
-                      >
-                        {st.isActive ? 'Disable' : 'Enable'}
-                      </button>
-                      <button className="text-slate-500 hover:underline" onClick={() => resetPassword.mutate(st.id)}>
-                        Reset password
-                      </button>
+                      {can('staff.manage') && (
+                        <button
+                          className="text-brand-600 hover:underline"
+                          onClick={() => toggleActive.mutate({ id: st.id, isActive: !st.isActive })}
+                        >
+                          {st.isActive ? 'Disable' : 'Enable'}
+                        </button>
+                      )}
+                      {can('staff.reset_password') && (
+                        <button className="text-slate-500 hover:underline" onClick={() => resetPassword.mutate(st.id)}>
+                          Reset password
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -136,10 +140,9 @@ const Staff = () => {
               <div>
                 <label className="label">Role *</label>
                 <select className="input" value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
-                  <option value="TEACHER">Teacher</option>
-                  <option value="ACCOUNTANT">Accountant / Bursar</option>
-                  <option value="ADMIN">Admin / Headteacher</option>
-                  <option value="OWNER">Owner / Proprietor</option>
+                  {STAFF_ROLE_OPTIONS.map((r) => (
+                    <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                  ))}
                 </select>
               </div>
               <div>

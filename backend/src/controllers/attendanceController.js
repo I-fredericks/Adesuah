@@ -1,5 +1,5 @@
 const prisma = require('../config/db');
-const { resolveSchoolId } = require('../middlewares/authMiddleware');
+const { resolveSchoolId, assertClassAccess, resolveClassScope } = require('../middlewares/authMiddleware');
 
 const parseDate = (dateStr) => {
   const d = new Date(`${dateStr}T00:00:00.000Z`);
@@ -18,6 +18,7 @@ const markAttendance = async (req, res) => {
 
   const klass = await prisma.schoolClass.findFirst({ where: { id: classId, schoolId } });
   if (!klass) return res.status(404).json({ message: 'Class not found' });
+  await assertClassAccess(req, schoolId, classId);
 
   await prisma.$transaction(
     records.map((r) =>
@@ -52,6 +53,7 @@ const getRegister = async (req, res) => {
     return res.status(400).json({ message: 'classId and date are required' });
   }
   const day = parseDate(String(req.query.date));
+  await assertClassAccess(req, schoolId, classId);
 
   const [students, records] = await Promise.all([
     prisma.student.findMany({
@@ -69,6 +71,7 @@ const getRegister = async (req, res) => {
 
   res.json({
     date: req.query.date,
+    canMark: true,
     students: students.map((s) => ({
       ...s,
       attendance: byStudent.get(s.id) || null,
@@ -82,9 +85,11 @@ const attendanceStats = async (req, res) => {
   const from = req.query.from ? parseDate(String(req.query.from)) : undefined;
   const to = req.query.to ? parseDate(String(req.query.to)) : undefined;
 
+  const classScope = await resolveClassScope(req, schoolId, 'attendance.view_all');
+
   const where = {
     schoolId,
-    ...(classId ? { classId } : {}),
+    ...(classId ? { classId } : classScope !== null ? { classId: { in: classScope } } : {}),
     ...(from || to ? { date: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
   };
 

@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 const TABS = ['Classes', 'Subjects', 'Assessment Types', 'Grading', 'Academic Year'];
 
 const Academics = () => {
-  const { isManagement } = useAuth();
+  const { can } = useAuth();
   const [tab, setTab] = useState('Classes');
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
@@ -115,7 +115,7 @@ const Academics = () => {
               </div>
             </div>
           ))}
-          {isManagement && (
+          {can('academics.manage') && (
             <div className="card flex flex-wrap items-end gap-3 p-5">
               <div>
                 <label className="label">New class name</label>
@@ -154,7 +154,7 @@ const Academics = () => {
               ))}
             </tbody>
           </table>
-          {isManagement && (
+          {can('academics.manage') && (
             <div className="mt-4 flex flex-wrap items-end gap-3 border-t pt-4">
               <div>
                 <label className="label">New subject</label>
@@ -223,7 +223,7 @@ const Academics = () => {
               <div className="mb-3 flex items-center gap-2">
                 <h2 className="font-semibold">{y.name}</h2>
                 {y.isCurrent && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Current</span>}
-                {isManagement && !y.isCurrent && (
+                {can('academics.manage') && !y.isCurrent && (
                   <button className="text-xs text-brand-600 hover:underline" onClick={() => setCurrentYear.mutate(y.id)}>
                     Set current
                   </button>
@@ -234,7 +234,7 @@ const Academics = () => {
                   <div key={t.id} className={`rounded-lg border p-3 text-sm ${t.isCurrent ? 'border-brand-500 bg-brand-50' : 'border-slate-200'}`}>
                     <p className="font-medium">{t.name.replace('TERM_', 'Term ')}</p>
                     <p className="text-xs text-slate-500">{new Date(t.startDate).toLocaleDateString()} – {new Date(t.endDate).toLocaleDateString()}</p>
-                    {isManagement && !t.isCurrent && (
+                    {can('academics.manage') && !t.isCurrent && (
                       <button className="mt-1 text-xs text-brand-600 hover:underline" onClick={() => setCurrentTerm.mutate(t.id)}>
                         Set current
                       </button>

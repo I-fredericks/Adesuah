@@ -1,5 +1,5 @@
 const prisma = require('../config/db');
-const { resolveSchoolId } = require('../middlewares/authMiddleware');
+const { resolveSchoolId, resolveClassScope } = require('../middlewares/authMiddleware');
 const { transferStudent } = require('../services/promotionService');
 
 const admissionNoFor = async (schoolId) => {
@@ -34,9 +34,14 @@ const listStudents = async (req, res) => {
   const classId = req.query.classId ? Number(req.query.classId) : undefined;
   const status = req.query.status || undefined;
 
+  const classScope = await resolveClassScope(req, schoolId);
+  if (classScope !== null && classId && !classScope.includes(classId)) {
+    return res.json({ students: [], total: 0, page: 1, pages: 1 });
+  }
+
   const where = {
     schoolId,
-    ...(classId ? { currentClassId: classId } : {}),
+    ...(classId ? { currentClassId: classId } : classScope !== null ? { currentClassId: { in: classScope } } : {}),
     ...(status ? { status } : { status: { not: 'WITHDRAWN' } }),
     ...(search
       ? {
@@ -66,8 +71,13 @@ const listStudents = async (req, res) => {
 
 const getStudent = async (req, res) => {
   const schoolId = resolveSchoolId(req);
+  const classScope = await resolveClassScope(req, schoolId);
   const student = await prisma.student.findFirst({
-    where: { id: Number(req.params.id), schoolId },
+    where: {
+      id: Number(req.params.id),
+      schoolId,
+      ...(classScope !== null ? { currentClassId: { in: classScope } } : {}),
+    },
     include: {
       currentClass: { include: { level: true } },
       guardians: true,

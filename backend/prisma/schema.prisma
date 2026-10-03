@@ -55,6 +55,7 @@ model School {
   payments        Payment[]
   announcements   Announcement[]
   notifications   Notification[]
+  rolePermissions RolePermission[]
 
   @@map("school")
 }
@@ -93,9 +94,28 @@ enum Role {
   SUPER_ADMIN
   OWNER
   ADMIN
+  HEADTEACHER
+  DEPUTY_HEAD
+  ACADEMIC_COORDINATOR
   TEACHER
   ACCOUNTANT
+  SECRETARY
+  SUPPORT_STAFF
   PARENT
+}
+
+// Per-school permission matrix: what each role may do. Seeded from code
+// defaults at onboarding; schools with no rows fall back to the defaults.
+model RolePermission {
+  id         Int    @id @default(autoincrement())
+  schoolId   Int
+  school     School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  role       Role
+  permission String
+
+  @@unique([schoolId, role, permission])
+  @@index([schoolId, role])
+  @@map("rolepermission")
 }
 
 enum Plan {

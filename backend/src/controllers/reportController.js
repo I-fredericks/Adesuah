@@ -1,6 +1,7 @@
 const prisma = require('../config/db');
-const { resolveSchoolId } = require('../middlewares/authMiddleware');
+const { resolveSchoolId, resolveClassScope } = require('../middlewares/authMiddleware');
 const { computeClassResults, publishClassReports } = require('../services/reportService');
+const { hasPermission } = require('../utils/permissions');
 
 const publishReports = async (req, res) => {
   const schoolId = resolveSchoolId(req);
@@ -16,13 +17,21 @@ const getStudentReport = async (req, res) => {
   if (!termId) return res.status(400).json({ message: 'termId is required' });
 
   const student = await prisma.student.findFirst({
-    where: { id: studentId, schoolId },
+    where: {
+      id: studentId,
+      schoolId,
+    },
     include: {
       currentClass: { include: { level: true } },
       guardians: { select: { name: true, relationship: true, phone: true } },
     },
   });
   if (!student) return res.status(404).json({ message: 'Student not found' });
+
+  const scope = await resolveClassScope(req, schoolId, 'reports.view_all');
+  if (scope !== null && (!student.currentClassId || !scope.includes(student.currentClassId))) {
+    return res.status(403).json({ message: 'You are not assigned to this class' });
+  }
 
   const term = await prisma.term.findFirst({
     where: { id: termId, schoolId },
@@ -71,6 +80,10 @@ const getClassReports = async (req, res) => {
   if (!classId || !termId) {
     return res.status(400).json({ message: 'classId and termId are required' });
   }
+  const scope = await resolveClassScope(req, schoolId, 'reports.view_all');
+  if (scope !== null && !scope.includes(classId)) {
+    return res.status(403).json({ message: 'You are not assigned to this class' });
+  }
 
   const reportCards = await prisma.reportCard.findMany({
     where: { schoolId, classId, termId },
@@ -91,6 +104,10 @@ const getBroadsheet = async (req, res) => {
   const termId = Number(req.query.termId);
   if (!classId || !termId) {
     return res.status(400).json({ message: 'classId and termId are required' });
+  }
+  const bsScope = await resolveClassScope(req, schoolId, 'reports.view_all');
+  if (bsScope !== null && !bsScope.includes(classId)) {
+    return res.status(403).json({ message: 'You are not assigned to this class' });
   }
   const results = await computeClassResults(schoolId, classId, termId);
 

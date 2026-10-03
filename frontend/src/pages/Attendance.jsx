@@ -15,7 +15,7 @@ const STATUS_STYLE = {
 };
 
 const Attendance = () => {
-  const { canTeach } = useAuth();
+  const { can } = useAuth();
   const [classId, setClassId] = useState('');
   const [date, setDate] = useState(today());
   const [marks, setMarks] = useState({});
@@ -74,7 +74,7 @@ const Attendance = () => {
       <PageHeader
         title="Attendance"
         subtitle="Daily class register"
-        actions={canTeach && classId && data?.students.length > 0 && (
+        actions={can('attendance.enter') && classId && data?.students.length > 0 && (
           <div className="flex gap-2">
             <button className="btn-secondary" onClick={() => setAll('PRESENT')}>All present</button>
             <button className="btn-primary" onClick={submit} disabled={mark.isPending}>

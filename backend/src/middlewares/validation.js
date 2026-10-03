@@ -252,9 +252,11 @@ const announcementSchema = z.object({
   sendSms: z.boolean().optional(),
 });
 
+const ROLE_ENUM = ['OWNER', 'HEADTEACHER', 'DEPUTY_HEAD', 'ACADEMIC_COORDINATOR', 'TEACHER', 'ACCOUNTANT', 'SECRETARY', 'SUPPORT_STAFF'];
+
 const staffCreateSchema = z.object({
   name: z.string().min(2, 'Name is required'),
-  role: z.enum(['OWNER', 'ADMIN', 'TEACHER', 'ACCOUNTANT']),
+  role: z.enum(ROLE_ENUM),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   phone: z.string().min(9).optional(),
   password: passwordSchema,
@@ -264,10 +266,14 @@ const staffCreateSchema = z.object({
 
 const staffUpdateSchema = z.object({
   name: z.string().min(2).optional(),
-  role: z.enum(['OWNER', 'ADMIN', 'TEACHER', 'ACCOUNTANT']).optional(),
+  role: z.enum(ROLE_ENUM).optional(),
   isActive: z.boolean().optional(),
   position: z.string().optional(),
   phone: z.string().optional(),
+});
+
+const rolePermissionsSchema = z.object({
+  permissions: z.array(z.string()),
 });
 
 const promoteSchema = z.object({
@@ -331,6 +337,7 @@ module.exports = {
   announcementSchema,
   staffCreateSchema,
   staffUpdateSchema,
+  rolePermissionsSchema,
   promoteSchema,
   platformSchoolSchema,
   platformStatusSchema,

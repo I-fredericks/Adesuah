@@ -5,7 +5,7 @@ import { PageHeader, Spinner, EmptyState } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
 const ScoreEntry = () => {
-  const { canTeach } = useAuth();
+  const { can } = useAuth();
   const [classId, setClassId] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [scores, setScores] = useState({});
@@ -75,13 +75,13 @@ const ScoreEntry = () => {
       <PageHeader
         title="Score entry"
         subtitle="Enter raw scores — totals, grades and positions are computed automatically"
-        actions={canTeach && data?.students.length > 0 && (
+        actions={can('grades.enter') && data?.students.length > 0 && (
           <button className="btn-primary" onClick={submit} disabled={save.isPending}>
             {save.isPending ? 'Saving…' : saved ? 'Saved ✓' : 'Save scores'}
           </button>
         )}
       />
-      {(save.isError || !canTeach) && save.isError && (
+      {save.isError && (
         <p className="mb-4 text-sm text-red-600">{getErrorMessage(save.error)}</p>
       )}
 

@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
 const { uniqueSlug, seedSchoolDefaults } = require('../services/onboardingService');
+const { getUserPermissions } = require('../services/permissionService');
+const { normalizeRole } = require('../utils/permissions');
 
 const signToken = (user) =>
   jwt.sign({ id: user.id, role: user.role, schoolId: user.schoolId }, process.env.JWT_SECRET, {
@@ -16,6 +18,11 @@ const publicUser = (user) => ({
   role: user.role,
   schoolId: user.schoolId,
 });
+
+const authPayload = async (user) => {
+  const permissions = await getUserPermissions({ ...user, role: normalizeRole(user.role) });
+  return { token: signToken(user), user: publicUser(user), permissions };
+};
 
 const registerSchool = async (req, res) => {
   const { school, owner, academicYear } = req.body;
@@ -63,8 +70,7 @@ const registerSchool = async (req, res) => {
   await seedSchoolDefaults(result.createdSchool.id, academicYear || {});
 
   res.status(201).json({
-    token: signToken(result.ownerUser),
-    user: publicUser(result.ownerUser),
+    ...(await authPayload(result.ownerUser)),
     school: { id: result.createdSchool.id, name: result.createdSchool.name, slug: result.createdSchool.slug },
   });
 };
@@ -99,7 +105,7 @@ const login = async (req, res) => {
 
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
-  res.json({ token: signToken(user), user: publicUser(user), school });
+  res.json({ ...(await authPayload(user)), school });
 };
 
 const me = async (req, res) => {
@@ -133,7 +139,8 @@ const me = async (req, res) => {
       },
     },
   });
-  res.json({ user });
+  const permissions = await getUserPermissions({ ...req.user, schoolId: user.schoolId });
+  res.json({ user: { ...user, role: normalizeRole(user.role) }, permissions });
 };
 
 const changePassword = async (req, res) => {

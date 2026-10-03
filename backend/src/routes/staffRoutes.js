@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const staff = require('../controllers/staffController');
-const { protect, requireManagement, resolveSchoolId } = require('../middlewares/authMiddleware');
+const { protect, requirePermission, resolveSchoolId } = require('../middlewares/authMiddleware');
 const { validate, staffCreateSchema, staffUpdateSchema } = require('../middlewares/validation');
 
-router.use(protect, requireManagement);
+router.use(protect);
 
-router.get('/', staff.listStaff);
-router.post('/', validate(staffCreateSchema), staff.createStaff);
-router.put('/:id', validate(staffUpdateSchema), staff.updateStaff);
-router.post('/:id/reset-password', staff.resetStaffPassword);
+router.get('/', requirePermission('staff.view'), staff.listStaff);
+router.post('/', requirePermission('staff.manage'), validate(staffCreateSchema), staff.createStaff);
+router.put('/:id', requirePermission('staff.manage'), validate(staffUpdateSchema), staff.updateStaff);
+router.post('/:id/reset-password', requirePermission('staff.reset_password'), staff.resetStaffPassword);
 
 module.exports = router;

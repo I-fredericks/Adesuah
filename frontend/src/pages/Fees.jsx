@@ -155,7 +155,7 @@ const StructureModal = ({ open, onClose, classes, terms }) => {
 const TABS = ['Invoices', 'Debtors', 'Structures', 'Payments'];
 
 const Fees = () => {
-  const { canManageFees } = useAuth();
+  const { can } = useAuth();
   const [tab, setTab] = useState('Invoices');
   const [paying, setPaying] = useState(null);
   const [showStructure, setShowStructure] = useState(false);
@@ -221,7 +221,7 @@ const Fees = () => {
         title="Fees"
         subtitle={currentTerm ? `${termLabel(currentTerm.name)} collections` : ''}
         actions={
-          canManageFees && (
+          can('fees.structure_manage') && (
             <button className="btn-primary" onClick={() => setShowStructure(true)}>New fee structure</button>
           )
         }
@@ -264,7 +264,7 @@ const Fees = () => {
                   <li key={i.id} className="flex justify-between"><span>{i.name}</span><span>{formatMoney(i.amount)}</span></li>
                 ))}
               </ul>
-              {canManageFees && s._count?.invoices === 0 && (
+              {can('fees.invoice_generate') && s._count?.invoices === 0 && (
                 <button
                   className="btn-secondary mt-3 w-full"
                   disabled={generate.isPending}
@@ -291,7 +291,7 @@ const Fees = () => {
                   <th className="th">Paid</th>
                   <th className="th">Balance</th>
                   <th className="th">Status</th>
-                  {canManageFees && <th className="th"></th>}
+                  {can('fees.payment_record') && <th className="th"></th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -306,7 +306,7 @@ const Fees = () => {
                     <td className="td text-emerald-600">{formatMoney(inv.amountPaid)}</td>
                     <td className="td font-semibold text-red-600">{formatMoney(inv.balance)}</td>
                     <td className="td"><Badge tone={STATUS_TONE[inv.status]}>{inv.status}</Badge></td>
-                    {canManageFees && (
+                    {can('fees.payment_record') && (
                       <td className="td">
                         {inv.balance > 0 && inv.status !== 'WAIVED' && (
                           <button className="text-sm font-medium text-brand-600 hover:underline" onClick={() => setPaying(inv)}>Pay</button>

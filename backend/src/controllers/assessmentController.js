@@ -1,6 +1,17 @@
 const prisma = require('../config/db');
-const { resolveSchoolId } = require('../middlewares/authMiddleware');
+const { resolveSchoolId, assertClassAccess, resolveClassScope } = require('../middlewares/authMiddleware');
 const { computeClassResults } = require('../services/reportService');
+const { hasPermission } = require('../utils/permissions');
+
+const resolveGradeScope = async (req, schoolId) => {
+  if (req.user.role === 'SUPER_ADMIN') return null;
+  if (!req._permissions) {
+    const permissionService = require('../services/permissionService');
+    req._permissions = await permissionService.getUserPermissions(req.user);
+  }
+  if (hasPermission(req._permissions || [], 'grades.view_all')) return null;
+  return require('../services/permissionService').teacherAssignedClassIds(schoolId, req.user.id);
+};
 
 const getScoreSheet = async (req, res) => {
   const schoolId = resolveSchoolId(req);
@@ -10,6 +21,7 @@ const getScoreSheet = async (req, res) => {
   if (!classId || !subjectId || !termId) {
     return res.status(400).json({ message: 'classId, subjectId and termId are required' });
   }
+  await assertClassAccess(req, schoolId, classId);
 
   const [students, assessmentTypes, existingScores, classSubjects] = await Promise.all([
     prisma.student.findMany({
@@ -60,6 +72,21 @@ const saveScores = async (req, res) => {
 
   const validEntries = entries.filter((e) => e.rawScore !== null && e.rawScore !== undefined);
 
+  await assertClassAccess(req, schoolId, classId);
+
+  // Subject teachers may only edit marks for subjects actually assigned to them
+  // unless they hold grades.edit_any (headteacher, coordinator, proprietor).
+  if (!hasPermission(req._permissions || [], 'grades.edit_any') && req.user.role !== 'SUPER_ADMIN') {
+    const assignment = await prisma.classSubject.findFirst({
+      where: { schoolId, classId, subjectId, teacherId: req.user.id },
+    });
+    if (!assignment) {
+      const err = new Error('This subject is not assigned to you');
+      err.status = 403;
+      throw err;
+    }
+  }
+
   await prisma.$transaction(
     entries.map((e) => {
       const where = {
@@ -106,6 +133,10 @@ const getComputedResults = async (req, res) => {
   const termId = Number(req.query.termId);
   if (!classId || !termId) {
     return res.status(400).json({ message: 'classId and termId are required' });
+  }
+  const scope = await resolveGradeScope(req, schoolId);
+  if (scope !== null && !scope.includes(classId)) {
+    return res.status(403).json({ message: 'You are not assigned to this class' });
   }
   const results = await computeClassResults(schoolId, classId, termId);
   res.json(results);

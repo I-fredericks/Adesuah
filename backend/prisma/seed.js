@@ -122,8 +122,7 @@ const seed = async () => {
   console.log(`  Owner:  ${DEMO_EMAIL} / Password123`);
   console.log('  Teacher: teacher@demo-school.edu.gh / Password123');
   console.log('  Bursar:  bursar@demo-school.edu.gh / Password123');
-  console.log(`  Classes: ${classes.length}, Students: ${counter - 1}`);
-};
+  console.log(`  Classes: ${classes.length}, Students: ${counter - 1}`);};
 
 seed()
   .catch((e) => {

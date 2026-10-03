@@ -21,17 +21,17 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
 const NAV = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, show: () => true },
-  { to: '/students', label: 'Students', icon: Users, show: () => true },
-  { to: '/academics', label: 'Academics', icon: BookOpen, show: () => true },
-  { to: '/attendance', label: 'Attendance', icon: CalendarCheck, show: (a) => a.canTeach },
-  { to: '/scores', label: 'Score Entry', icon: ClipboardList, show: (a) => a.canTeach },
-  { to: '/reports', label: 'Report Cards', icon: FileText, show: () => true },
-  { to: '/fees', label: 'Fees', icon: Wallet, show: () => true },
-  { to: '/announcements', label: 'Announcements', icon: Megaphone, show: () => true },
-  { to: '/staff', label: 'Staff', icon: UserCog, show: (a) => a.isManagement },
-  { to: '/settings', label: 'Settings', icon: Settings, show: (a) => a.isManagement },
-  { to: '/platform', label: 'Platform Admin', icon: Building2, show: (a) => a.isPlatform },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'school.view' },
+  { to: '/students', label: 'Students', icon: Users, perm: 'students.view' },
+  { to: '/academics', label: 'Academics', icon: BookOpen, perm: 'academics.view' },
+  { to: '/attendance', label: 'Attendance', icon: CalendarCheck, perm: 'attendance.view' },
+  { to: '/scores', label: 'Score Entry', icon: ClipboardList, perm: 'grades.enter' },
+  { to: '/reports', label: 'Report Cards', icon: FileText, perm: 'reports.view' },
+  { to: '/fees', label: 'Fees', icon: Wallet, perm: 'fees.view' },
+  { to: '/announcements', label: 'Announcements', icon: Megaphone, perm: 'announcements.view' },
+  { to: '/staff', label: 'Staff', icon: UserCog, perm: 'staff.view' },
+  { to: '/settings', label: 'Settings', icon: Settings, perm: 'school.view' },
+  { to: '/platform', label: 'Platform Admin', icon: Building2, perm: null, platform: true },
 ];
 
 const NotificationsBell = () => {
@@ -55,10 +55,10 @@ const NotificationsBell = () => {
 };
 
 const Layout = () => {
-  const { user, school, logout, isPlatform } = useAuth();
+  const { user, school, logout, can, isPlatform } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const nav = NAV.filter((item) => item.show({ isPlatform, isManagement: ['OWNER', 'ADMIN'].includes(user?.role), canManageFees: ['OWNER', 'ADMIN', 'ACCOUNTANT'].includes(user?.role), canTeach: ['OWNER', 'ADMIN', 'TEACHER'].includes(user?.role) }));
+  const nav = NAV.filter((item) => (item.platform ? isPlatform : can(item.perm)));
 
   return (
     <div className="flex min-h-screen">

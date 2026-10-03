@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
+const { hasPermission, normalizeRole, STAFF_ROLES: CATALOG_STAFF_ROLES } = require('../utils/permissions');
+const permissionService = require('../services/permissionService');
 
-const STAFF_ROLES = ['OWNER', 'ADMIN', 'TEACHER', 'ACCOUNTANT'];
+const STAFF_ROLES = CATALOG_STAFF_ROLES;
 
 const protect = async (req, res, next) => {
   let token;
@@ -47,18 +49,46 @@ const protect = async (req, res, next) => {
       }
     }
 
-    req.user = user;
+    req.user = { ...user, role: normalizeRole(user.role) };
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Not authorized, invalid token' });
   }
 };
 
-const requireRole = (...roles) => (req, res, next) => {
+const requirePermission = (permission) => async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ message: 'Not authorized' });
+
+  if (req.user.role === 'SUPER_ADMIN') return next();
+
+  if (!req._permissions) {
+    req._permissions = await permissionService.getUserPermissions(req.user);
+  }
+  const granted = req._permissions || [];
+
+  if (!hasPermission(granted, permission)) {
+    return res.status(403).json({
+      message: `You do not have permission for this action (requires ${permission})`,
+      permission,
+    });
+  }
+  next();
+};
+
+const requirePermissions = (...permissions) => async (req, res, next) => {
   if (!req.user) return res.status(401).json({ message: 'Not authorized' });
   if (req.user.role === 'SUPER_ADMIN') return next();
-  if (!roles.includes(req.user.role)) {
-    return res.status(403).json({ message: 'You do not have permission for this action' });
+
+  if (!req._permissions) {
+    req._permissions = await permissionService.getUserPermissions(req.user);
+  }
+  const granted = req._permissions || [];
+  const missing = permissions.find((p) => !hasPermission(granted, p));
+  if (missing) {
+    return res.status(403).json({
+      message: `You do not have permission for this action (requires ${missing})`,
+      permission: missing,
+    });
   }
   next();
 };
@@ -68,8 +98,6 @@ const requireStaff = (req, res, next) => {
   if (req.user.role === 'SUPER_ADMIN' || STAFF_ROLES.includes(req.user.role)) return next();
   return res.status(403).json({ message: 'Staff access required' });
 };
-
-const requireManagement = requireRole('OWNER', 'ADMIN');
 
 const requirePlatform = (req, res, next) => {
   if (!req.user) return res.status(401).json({ message: 'Not authorized' });
@@ -97,12 +125,35 @@ const resolveSchoolId = (req) => {
   return req.user.schoolId;
 };
 
+// Assignment scoping: users with only `students.view` (e.g. TEACHER) may only
+// see data for classes they are assigned to. Returns null for school-wide access.
+const resolveClassScope = async (req, schoolId, viewAllPermission = 'students.view_all') => {
+  if (req.user.role === 'SUPER_ADMIN') return null;
+  if (!req._permissions) {
+    req._permissions = await permissionService.getUserPermissions(req.user);
+  }
+  if ((req._permissions || []).includes(viewAllPermission)) return null;
+  return permissionService.teacherAssignedClassIds(schoolId, req.user.id);
+};
+
+const assertClassAccess = async (req, schoolId, classId) => {
+  const scope = await resolveClassScope(req, schoolId);
+  if (scope === null) return;
+  if (!scope.includes(Number(classId))) {
+    const err = new Error('You are not assigned to this class');
+    err.status = 403;
+    throw err;
+  }
+};
+
 module.exports = {
   protect,
-  requireRole,
+  requirePermission,
+  requirePermissions,
   requireStaff,
-  requireManagement,
   requirePlatform,
   resolveSchoolId,
+  resolveClassScope,
+  assertClassAccess,
   STAFF_ROLES,
 };

@@ -123,7 +123,7 @@ const AddStudentModal = ({ open, onClose, classes }) => {
 };
 
 const Students = () => {
-  const { isManagement } = useAuth();
+  const { can } = useAuth();
   const [searchParams] = useSearchParams();
   const classId = searchParams.get('classId');
   const [search, setSearch] = useState('');
@@ -151,7 +151,7 @@ const Students = () => {
         title="Students"
         subtitle={data ? `${data.total} enrolled` : ''}
         actions={
-          isManagement && (
+          can('students.create') && (
             <button className="btn-primary" onClick={() => setShowAdd(true)}>
               <Plus className="h-4 w-4" /> Enroll student
             </button>
