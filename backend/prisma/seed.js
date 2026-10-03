@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 const { seedSchoolDefaults } = require('../src/services/onboardingService');
 const { publishClassReports } = require('../src/services/reportService');
 
-const PASSWORD = 'lookatem';
+const PASSWORD = 'lookatme';
 const DEMO_SLUG = 'adesuah-demo-school';
 
 const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -53,7 +53,7 @@ const seed = async () => {
   });
   await seedSchoolDefaults(school.id);
 
-  console.log('Creating users (password: lookatem)…');
+  console.log('Creating users (password: lookatme)…');
   const hash = await bcrypt.hash(PASSWORD, 10);
   const users = {};
   let staffCounter = 0;
@@ -514,7 +514,7 @@ const seed = async () => {
   };
   console.log('\nSeed complete — Adesuah Demonstration School ready.');
   console.log(`  Pupils: ${counts.students} · Invoices: ${counts.invoices} · Payments: ${counts.payments} · Scores: ${counts.scores} · Attendance rows: ${counts.attendance}`);
-  console.log('\nALL LOGINS (password for every account: lookatem)\n');
+  console.log('\nALL LOGINS (password for every account: lookatme)\n');
   console.log('  PLATFORM SUPER-ADMIN  admin@adesuah.demo');
   console.log('  PROPRIETOR / OWNER    proprietor@adesuah.demo');
   console.log('  HEADTEACHER           head@adesuah.demo');

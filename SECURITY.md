@@ -59,7 +59,7 @@ reject anything else (verified: HTML payload → 400).
 ~10 failures) + failed-login audit rows. Not urgent while the API is private.
 
 ### 🟡 M4 — Weak password policy — **OPEN (accepted)**
-Minimum 8 characters, no complexity/breach checks (`lookatem` passes). Suitable
+Minimum 8 characters, no complexity/breach checks (`lookatme` passes). Suitable
 for a small-school product today; add zxcvbn-style scoring or breach-list checks
 later, and consider 2FA for OWNER/HEADTEACHER.
 
