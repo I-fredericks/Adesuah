@@ -21,6 +21,7 @@ import {
   Clock,
   Banknote,
   Menu,
+  X,
   ChevronDown,
   UserCircle,
 } from 'lucide-react';
@@ -76,7 +77,6 @@ const Layout = () => {
   const [panelOpen, setPanelOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const unread = useUnread(panelOpen);
 
   const isParent = user?.role === 'PARENT';
@@ -167,11 +167,7 @@ const Layout = () => {
         </div>
       </aside>
 
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 pl-4 pr-4 backdrop-blur lg:pl-8 lg:pr-8">
           <div className="flex min-w-0 items-center gap-3">
@@ -246,44 +242,8 @@ const Layout = () => {
                 </>
               )}
             </div>
-            <button className="rounded-full p-1 lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Menu">
-              <Menu className="h-6 w-6 text-slate-500" />
-            </button>
           </div>
         </header>
-
-        {/* Account sheet (mobile avatar menu) */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setSidebarOpen(false)}>
-            <div className="absolute inset-0 bg-black/30" />
-            <div
-              className="absolute right-0 top-0 flex h-full w-72 flex-col bg-white shadow-xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3 border-b border-slate-100 p-4">
-                <Avatar user={user} size="h-11 w-11" text="text-lg" />
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{user?.name}</p>
-                  <p className="truncate text-xs text-slate-400">{user?.role?.replace('_', ' ')} · {school?.name}</p>
-                </div>
-                <button className="ml-auto text-2xl text-slate-400" onClick={() => setSidebarOpen(false)}>×</button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3 lg:hidden">
-                {rest.map((item) => (
-                  <NavLinkItem key={item.to} item={item} mobile />
-                ))}
-              </div>
-              <div className="border-t border-slate-100 p-3">
-                <button
-                  onClick={doLogout}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-100 py-2.5 text-sm font-medium text-red-600"
-                >
-                  <LogOut className="h-4 w-4" /> Sign out
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <main className="mx-auto w-full max-w-7xl flex-1 p-4 pb-24 lg:p-8 lg:pb-8">
           <Outlet />
@@ -315,6 +275,13 @@ const Layout = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200" />
+            <div className="mb-3 flex items-center gap-3 border-b border-slate-100 pb-3">
+              <Avatar user={user} size="h-11 w-11" text="text-lg" />
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{user?.name}</p>
+                <p className="truncate text-xs text-slate-400">{user?.role?.replace('_', ' ')} · {school?.name}</p>
+              </div>
+            </div>
             <div className="grid grid-cols-3 gap-2">
               {rest.map((item) => (
                 <NavLink
@@ -330,6 +297,12 @@ const Layout = () => {
                 </NavLink>
               ))}
             </div>
+            <button
+              onClick={doLogout}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 py-3 text-sm font-semibold text-red-600"
+            >
+              <LogOut className="h-4 w-4" /> Sign out
+            </button>
           </div>
         </div>
       )}
