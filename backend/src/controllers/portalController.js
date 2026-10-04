@@ -110,6 +110,7 @@ const getChildDetail = async (req, res) => {
     })),
     reportCards: s.reportCards.map((rc) => ({
       id: rc.id,
+      termId: rc.termId,
       term: rc.term.name,
       average: rc.average,
       totalScore: rc.totalScore,

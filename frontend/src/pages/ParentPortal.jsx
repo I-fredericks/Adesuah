@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Printer, Camera, Megaphone } from 'lucide-react';
-import api from '../utils/api';
+import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, Spinner, EmptyState, Badge, StatCard, Card } from '../components/ui';
 import { formatMoney, formatDate, termLabel, ordinalSuffixClient, ROLE_LABELS } from '../utils/format';
 import { resizeImage } from '../utils/permissions';
@@ -86,10 +86,57 @@ const ChildSwitcher = ({ children: kids, selected, onSelect }) => {
   );
 };
 
+const ReportDetail = ({ childId, termId }) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['childReport', childId, termId],
+    queryFn: () =>
+      api.get(`/portal/children/${childId}/report`, { params: { termId } }).then((r) => r.data),
+    enabled: !!childId && !!termId,
+  });
+
+  if (isLoading) return <Spinner className="mx-auto my-3 h-6 w-6" />;
+  if (error) return <p className="px-4 pb-3 text-xs text-red-500">{getErrorMessage(error)}</p>;
+
+  const rc = data?.reportCard;
+  if (!rc) return <p className="px-4 pb-3 text-xs text-slate-400">Report not available</p>;
+
+  return (
+    <div>
+      <table className="w-full text-xs">
+        <thead className="bg-slate-50 text-left text-slate-400">
+          <tr>
+            <th className="px-3 py-2">Subject</th>
+            <th className="px-3 py-2 text-center">Total</th>
+            <th className="px-3 py-2 text-center">Grade</th>
+            <th className="px-3 py-2 text-center">Pos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(rc.subjects || []).map((s) => (
+            <tr key={s.subjectId} className="border-t border-slate-100">
+              <td className="px-3 py-2">{s.subject}</td>
+              <td className="px-3 py-2 text-center">{s.total ?? '—'}</td>
+              <td className="px-3 py-2 text-center font-semibold">{s.grade ?? '—'}</td>
+              <td className="px-3 py-2 text-center">{s.position ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {(rc.teacherRemark || rc.headRemark) && (
+        <div className="space-y-1 border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
+          {rc.teacherRemark && <p><span className="font-medium">Teacher:</span> {rc.teacherRemark}</p>}
+          {rc.headRemark && <p><span className="font-medium">Head:</span> {rc.headRemark}</p>}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ParentPortal = () => {
   const { user } = useAuth();
   const [childId, setChildId] = useState(null);
   const [tab, setTab] = useState('overview');
+  const [openTerm, setOpenTerm] = useState(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['myChildren'],
@@ -106,7 +153,7 @@ const ParentPortal = () => {
     enabled: !!childId,
   });
 
-  const { data: assignments } = useQuery({
+  const { data: assignmentsData } = useQuery({
     queryKey: ['childAssignments', childId],
     queryFn: () => api.get(`/portal/children/${childId}/assignments`).then((r) => r.data),
     enabled: !!childId,
@@ -138,6 +185,7 @@ const ParentPortal = () => {
 
   const child = kids.find((c) => c.id === childId) || kids[0];
   const d = detail || null;
+  const assignmentList = assignmentsData?.assignments || [];
   const totalOutstanding = (d?.invoices || []).reduce((s, i) => s + i.balance, 0);
   const totalPaid = (d?.invoices || []).reduce((s, i) => s + i.paid, 0);
 
@@ -230,40 +278,21 @@ const ParentPortal = () => {
           ) : (
             d.reportCards.map((rc) => (
               <Card key={rc.id} className="overflow-hidden p-0">
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <button
+                  className="flex w-full items-center justify-between px-4 py-3 text-left"
+                  onClick={() => setOpenTerm(openTerm === rc.termId ? null : rc.termId)}
+                >
                   <div>
-                    <p className="font-semibold">{termLabel(rc.term.name)}</p>
+                    <p className="font-semibold">{termLabel(rc.term)}</p>
                     <p className="text-xs text-slate-400">Published {formatDate(rc.publishedAt)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-brand-600">{rc.average}%</p>
                     <p className="text-[10px] text-slate-400">{ordinalSuffixClient(rc.classPosition)} position</p>
                   </div>
-                </div>
-                <table className="w-full text-xs">
-                  <thead className="bg-slate-50 text-left text-slate-400">
-                    <tr>
-                      <th className="px-3 py-2">Subject</th>
-                      <th className="px-3 py-2 text-center">Total</th>
-                      <th className="px-3 py-2 text-center">Grade</th>
-                      <th className="px-3 py-2 text-center">Pos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rc.subjects.map((s) => (
-                      <tr key={s.subjectId} className="border-t border-slate-100">
-                        <td className="px-3 py-2">{s.subject}</td>
-                        <td className="px-3 py-2 text-center">{s.total ?? '—'}</td>
-                        <td className="px-3 py-2 text-center font-semibold">{s.grade ?? '—'}</td>
-                        <td className="px-3 py-2 text-center">{s.position ?? '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {rc.teacherRemark && (
-                  <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
-                    <span className="font-medium">Teacher:</span> {rc.teacherRemark}
-                  </p>
+                </button>
+                {openTerm === rc.termId && (
+                  <ReportDetail childId={childId} termId={rc.termId} />
                 )}
               </Card>
             ))
@@ -331,10 +360,10 @@ const ParentPortal = () => {
 
         {/* ── Homework ── */}
         {tab === 'homework' && (
-          !assignments || assignments.length === 0 ? (
+          !assignmentList.length ? (
             <EmptyState message="No homework has been given yet" />
           ) : (
-            assignments.map((a) => {
+            assignmentList.map((a) => {
               const overdue = a.dueDate && new Date(a.dueDate) < new Date();
               return (
                 <Card key={a.id} className="p-4">

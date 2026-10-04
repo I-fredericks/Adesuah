@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, EmptyState } from '../components/ui';
@@ -22,6 +22,13 @@ const ReportCards = () => {
     queryKey: ['terms'],
     queryFn: () => api.get('/academic/terms').then((r) => r.data),
   });
+
+  useEffect(() => {
+    if (!termId && termsData?.terms?.length) {
+      const current = termsData.terms.find((t) => t.isCurrent) || termsData.terms[0];
+      setTermId(current.id);
+    }
+  }, [termsData, termId]);
 
   const { data: results } = useQuery({
     queryKey: ['results', classId, termId],
@@ -108,10 +115,59 @@ const ReportCards = () => {
 
       {report?.reportCard && (
         <div className="print-area card mx-auto max-w-3xl p-8">
+          {!report.reportCard.published && (
+            <p className="no-print mb-3 rounded-lg bg-amber-50 px-4 py-2 text-center text-xs font-medium text-amber-700">
+              Computed preview — this report card has not been published yet
+            </p>
+          )}
           <ReportCardView report={report} />
           <div className="no-print mt-6 text-center">
             <button className="btn-primary" onClick={() => window.print()}>Print report card</button>
           </div>
+        </div>
+      )}
+
+      {report && !report.reportCard && report.preview && (
+        <div className="print-area card mx-auto max-w-3xl p-8">
+          <p className="no-print mb-3 rounded-lg bg-amber-50 px-4 py-2 text-center text-xs font-medium text-amber-700">
+            Computed preview — this report card has not been published yet.
+            Use “Publish class reports” to make it official.
+          </p>
+          <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3">
+            <div>
+              <p className="font-semibold">{report.preview.name}</p>
+              <p className="text-xs text-slate-400">{report.student.admissionNo} · {report.student.currentClass?.name || '—'}</p>
+            </div>
+            <div className="text-right text-sm">
+              <p className="font-bold text-brand-600">{report.preview.average ?? '—'}%</p>
+              <p className="text-xs text-slate-400">
+                {report.preview.positionLabel || '—'} position · {report.preview.daysPresent}/{report.preview.daysOpened} days present
+              </p>
+            </div>
+          </div>
+          <table className="w-full text-xs">
+            <thead className="bg-slate-50 text-left text-slate-400">
+              <tr>
+                <th className="px-3 py-2">Subject</th>
+                <th className="px-3 py-2 text-center">Total</th>
+                <th className="px-3 py-2 text-center">Grade</th>
+                <th className="px-3 py-2 text-center">Pos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.preview.subjects.map((s) => (
+                <tr key={s.subjectId} className="border-t border-slate-100">
+                  <td className="px-3 py-2">{s.subject}</td>
+                  <td className="px-3 py-2 text-center">{s.total ?? '—'}</td>
+                  <td className="px-3 py-2 text-center font-semibold">{s.grade ?? '—'}</td>
+                  <td className="px-3 py-2 text-center">{s.position ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-3 text-xs text-slate-400">
+            Teacher: “{report.preview.teacherRemark || '—'}”
+          </p>
         </div>
       )}
 
