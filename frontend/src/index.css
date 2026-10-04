@@ -37,12 +37,24 @@ body {
 }
 
 @media print {
+  /* Hide the app shell so printed reports/statements come out clean */
+  aside,
+  header,
+  nav,
   .no-print {
     display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .lg\:pl-60 {
+    padding-left: 0 !important;
   }
   .print-area {
     box-shadow: none !important;
     border: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
   }
   body {
     background: white !important;

@@ -124,21 +124,67 @@ const getChildDetail = async (req, res) => {
 const getChildReport = async (req, res) => {
   const link = await prisma.guardian.findFirst({
     where: { userId: req.user.id, studentId: Number(req.params.id) },
-    select: { id: true },
+    include: {
+      student: {
+        include: { currentClass: { include: { level: true } } },
+      },
+    },
   });
   if (!link) return res.status(404).json({ message: 'Child not found' });
 
+  const termId = Number(req.query.termId);
   const reportCard = await prisma.reportCard.findFirst({
     where: {
       studentId: Number(req.params.id),
-      termId: Number(req.query.termId),
+      termId,
       published: true,
     },
-    include: { term: { include: { academicYear: { select: { name: true } } } } },
+    include: {
+      term: { include: { academicYear: { select: { name: true } } } },
+    },
   });
   if (!reportCard) return res.status(404).json({ message: 'No published report for this term yet' });
 
-  res.json({ reportCard });
+  const school = await prisma.school.findUnique({
+    where: { id: req.user.schoolId },
+    select: {
+      name: true,
+      shortName: true,
+      logoUrl: true,
+      motto: true,
+      address: true,
+      city: true,
+      region: true,
+      phone: true,
+      gesRegNumber: true,
+    },
+  });
+
+  const s = link.student;
+
+  res.json({
+    // Same payload shape the staff printable view uses, so parents get the
+    // identical official report card.
+    school,
+    term: {
+      name: reportCard.term.name,
+      academicYear: reportCard.term.academicYear?.name || null,
+      endDate: reportCard.term.endDate,
+      vacationDate: reportCard.term.vacationDate,
+      nextTermBegins: reportCard.term.nextTermBegins,
+    },
+    student: {
+      firstName: s.firstName,
+      otherNames: s.otherNames,
+      lastName: s.lastName,
+      admissionNo: s.admissionNo,
+      dateOfBirth: s.dateOfBirth,
+      photoUrl: s.photoUrl,
+      currentClass: s.currentClass ? { name: s.currentClass.name } : null,
+      guardians: [],
+    },
+    reportCard,
+  });
 };
 
 // Homework/assignments for a child's class — so parents can verify what was given.

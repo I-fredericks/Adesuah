@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Printer, Camera, Megaphone } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, Spinner, EmptyState, Badge, StatCard, Card } from '../components/ui';
+import ReportCardView from '../components/ReportCardView';
 import { formatMoney, formatDate, termLabel, ordinalSuffixClient, ROLE_LABELS } from '../utils/format';
 import { resizeImage } from '../utils/permissions';
 import { useAuth } from '../context/AuthContext';
@@ -102,32 +103,15 @@ const ReportDetail = ({ childId, termId }) => {
 
   return (
     <div>
-      <table className="w-full text-xs">
-        <thead className="bg-slate-50 text-left text-slate-400">
-          <tr>
-            <th className="px-3 py-2">Subject</th>
-            <th className="px-3 py-2 text-center">Total</th>
-            <th className="px-3 py-2 text-center">Grade</th>
-            <th className="px-3 py-2 text-center">Pos</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(rc.subjects || []).map((s) => (
-            <tr key={s.subjectId} className="border-t border-slate-100">
-              <td className="px-3 py-2">{s.subject}</td>
-              <td className="px-3 py-2 text-center">{s.total ?? '—'}</td>
-              <td className="px-3 py-2 text-center font-semibold">{s.grade ?? '—'}</td>
-              <td className="px-3 py-2 text-center">{s.position ?? '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {(rc.teacherRemark || rc.headRemark) && (
-        <div className="space-y-1 border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
-          {rc.teacherRemark && <p><span className="font-medium">Teacher:</span> {rc.teacherRemark}</p>}
-          {rc.headRemark && <p><span className="font-medium">Head:</span> {rc.headRemark}</p>}
-        </div>
-      )}
+      <ReportCardView report={data} />
+      <div className="mt-3 flex justify-end">
+        <button
+          onClick={() => window.print()}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600"
+        >
+          Print / save as PDF
+        </button>
+      </div>
     </div>
   );
 };
