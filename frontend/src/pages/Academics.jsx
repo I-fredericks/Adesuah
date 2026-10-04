@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, ErrorNote, EmptyState } from '../components/ui';
+import { PageHeader, ErrorNote, EmptyState, SkeletonPage } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
 const TABS = ['Classes', 'Subjects', 'Teacher Allocation', 'Assessment Types', 'Grading', 'Academic Year'];

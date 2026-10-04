@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, X, RotateCcw, Camera } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, ErrorNote, Badge } from '../components/ui';
+import { PageHeader, Spinner, ErrorNote, Badge, SkeletonPage } from '../components/ui';
 import { ROLE_LABELS } from '../utils/format';
 import { PERMISSION_LABELS, resizeImage } from '../utils/permissions';
 import { useAuth } from '../context/AuthContext';

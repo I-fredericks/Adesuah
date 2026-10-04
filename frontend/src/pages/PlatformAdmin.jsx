@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, StatCard, Badge, Modal, ErrorNote } from '../components/ui';
+import { PageHeader, StatCard, Badge, Modal, ErrorNote, SkeletonTable } from '../components/ui';
 import { formatDate } from '../utils/format';
 
 const PlatformAdmin = () => {

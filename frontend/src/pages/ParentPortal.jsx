@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Printer, Camera, Megaphone } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge, StatCard, Card } from '../components/ui';
+import { PageHeader, Spinner, EmptyState, Badge, StatCard, Card, SkeletonPage } from '../components/ui';
 import ReportCardView from '../components/ReportCardView';
 import { formatMoney, formatDate, termLabel, ordinalSuffixClient, ROLE_LABELS } from '../utils/format';
 import { resizeImage } from '../utils/permissions';

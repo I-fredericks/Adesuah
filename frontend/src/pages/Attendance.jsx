@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, EmptyState, Badge } from '../components/ui';
+import { PageHeader, EmptyState, Badge, SkeletonTable } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
 const STATUSES = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'];

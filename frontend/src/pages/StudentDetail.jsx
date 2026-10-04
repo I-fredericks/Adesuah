@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Badge, Card } from '../components/ui';
+import { PageHeader, Badge, Card, SkeletonPage } from '../components/ui';
 import { formatMoney, formatDate, termLabel } from '../utils/format';
 import { resizeImage } from '../utils/permissions';
 import { useAuth } from '../context/AuthContext';

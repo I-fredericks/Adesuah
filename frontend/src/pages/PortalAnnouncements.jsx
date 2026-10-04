@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../utils/api';
-import { PageHeader, EmptyState, Badge } from '../components/ui';
+import { PageHeader, EmptyState, Badge, SkeletonTable } from '../components/ui';
 import { formatDate } from '../utils/format';
 
 const PortalAnnouncements = () => {

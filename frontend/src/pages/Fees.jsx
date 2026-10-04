@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BellRing, Printer, MessageCircle } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, EmptyState, Badge, Modal, ErrorNote, StatCard } from '../components/ui';
+import { PageHeader, EmptyState, Badge, Modal, ErrorNote, StatCard, SkeletonTable } from '../components/ui';
 import { formatMoney, formatDate, termLabel, whatsappLink } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 

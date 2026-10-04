@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
-import { PageHeader, StatCard, Badge, Card } from '../components/ui';
+import { PageHeader, StatCard, Badge, Card, SkeletonPage } from '../components/ui';
 import { Users, CalendarCheck, AlertTriangle, UserCheck } from 'lucide-react';
 import { formatMoney, formatDate, termLabel } from '../utils/format';
 import { useAuth } from '../context/AuthContext';

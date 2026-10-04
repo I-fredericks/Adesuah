@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, EmptyState, Badge, Modal, ErrorNote } from '../components/ui';
+import { PageHeader, EmptyState, Badge, Modal, ErrorNote, SkeletonTable } from '../components/ui';
 import { formatDate, ROLE_LABELS, STAFF_ROLE_OPTIONS } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 

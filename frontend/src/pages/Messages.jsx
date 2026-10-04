@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Send, FileText, AlertTriangle } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, EmptyState, Badge, StatCard, Card } from '../components/ui';
+import { PageHeader, EmptyState, Badge, StatCard, Card, SkeletonTable } from '../components/ui';
 import { formatDateTime } from '../utils/format';
 
 
