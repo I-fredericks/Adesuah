@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge } from '../components/ui';
+import { PageHeader, EmptyState, Badge } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
 const STATUSES = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'];
@@ -103,7 +103,7 @@ const Attendance = () => {
       </div>
 
       {isLoading ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonTable rows={7} />
       ) : !classId ? (
         <EmptyState message="Choose a class to take attendance" />
       ) : !data || data.students.length === 0 ? (

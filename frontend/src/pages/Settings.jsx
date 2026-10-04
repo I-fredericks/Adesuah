@@ -156,7 +156,7 @@ const RolesMatrix = () => {
     onError: (err) => setError(getErrorMessage(err)),
   });
 
-  if (isLoading) return <Spinner className="mx-auto h-8 w-8" />;
+  if (isLoading) return <SkeletonPage />;
   if (!data) return null;
 
   const roles = Object.keys(data.matrix);

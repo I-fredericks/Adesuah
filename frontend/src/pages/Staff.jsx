@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge, Modal, ErrorNote } from '../components/ui';
+import { PageHeader, EmptyState, Badge, Modal, ErrorNote } from '../components/ui';
 import { formatDate, ROLE_LABELS, STAFF_ROLE_OPTIONS } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
@@ -59,7 +59,7 @@ const Staff = () => {
       )}
 
       {isLoading ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonTable rows={7} />
       ) : !data || data.staff.length === 0 ? (
         <EmptyState message="No staff yet" />
       ) : (

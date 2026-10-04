@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge, Card } from '../components/ui';
+import { PageHeader, EmptyState, Badge, Card } from '../components/ui';
 import { formatDate } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
@@ -56,7 +56,7 @@ const Corrections = () => {
       </div>
 
       {isLoading ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonTable rows={7} />
       ) : !data || data.corrections.length === 0 ? (
         <EmptyState message={`No ${statusFilter.toLowerCase()} correction requests`} />
       ) : (

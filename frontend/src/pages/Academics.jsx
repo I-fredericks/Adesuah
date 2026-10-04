@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, ErrorNote, EmptyState } from '../components/ui';
+import { PageHeader, ErrorNote, EmptyState } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
 const TABS = ['Classes', 'Subjects', 'Teacher Allocation', 'Assessment Types', 'Grading', 'Academic Year'];
@@ -66,7 +66,7 @@ const Academics = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['years'] }),
   });
 
-  if (isLoading) return <Spinner className="mx-auto h-8 w-8" />;
+  if (isLoading) return <SkeletonPage />;
 
   const levels = levelsData?.levels || [];
   const classes = classesData?.classes || [];
@@ -294,7 +294,7 @@ const TeacherAllocation = ({ classes, canManage }) => {
       </div>
       {msg && <p className="mb-3 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">{msg}</p>}
       {isLoading || !csData ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonPage />
       ) : csData.classSubjects.length === 0 ? (
         <EmptyState message="This class has no subjects linked" />
       ) : (

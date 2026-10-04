@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge } from '../components/ui';
+import { PageHeader, EmptyState, Badge } from '../components/ui';
 import { formatDate } from '../utils/format';
 
 const PortalAnnouncements = () => {
@@ -13,7 +13,7 @@ const PortalAnnouncements = () => {
     <div className="mx-auto max-w-3xl">
       <PageHeader title="School notices" subtitle="Everything the school has shared with you" />
       {isLoading ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonTable rows={7} />
       ) : !data || data.announcements.length === 0 ? (
         <EmptyState message="No notices from the school yet" />
       ) : (

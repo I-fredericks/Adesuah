@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Send, FileText, AlertTriangle } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge, StatCard, Card } from '../components/ui';
+import { PageHeader, EmptyState, Badge, StatCard, Card } from '../components/ui';
 import { formatDateTime } from '../utils/format';
 
 
@@ -61,7 +61,7 @@ const Messages = () => {
       </div>
 
       {isLoading ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonTable rows={7} />
       ) : !data || data.messages.length === 0 ? (
         <EmptyState icon={MessageSquare} message="No messages yet — fee reminders and absence alerts will appear here" />
       ) : (

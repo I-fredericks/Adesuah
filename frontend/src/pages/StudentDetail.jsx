@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Badge, Spinner, Card } from '../components/ui';
+import { PageHeader, Badge, Card } from '../components/ui';
 import { formatMoney, formatDate, termLabel } from '../utils/format';
 import { resizeImage } from '../utils/permissions';
 import { useAuth } from '../context/AuthContext';
@@ -48,7 +48,7 @@ const StudentDetail = () => {
     onError: (err) => setError(getErrorMessage(err)),
   });
 
-  if (isLoading) return <Spinner className="mx-auto h-8 w-8" />;
+  if (isLoading) return <SkeletonPage />;
   if (loadError) return <p className="text-sm text-red-600">{getErrorMessage(loadError)}</p>;
 
   const { student: s, attendance } = data;

@@ -154,7 +154,7 @@ const ParentPortal = () => {
     queryFn: () => api.get('/portal/announcements').then((r) => r.data),
   });
 
-  if (isLoading) return <Spinner className="mx-auto h-8 w-8" />;
+  if (isLoading) return <SkeletonPage />;
 
   const kids = data?.children || [];
 

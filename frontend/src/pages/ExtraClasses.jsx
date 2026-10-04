@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, Pause, Square, Pencil } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge, Modal, ErrorNote } from '../components/ui';
+import { PageHeader, EmptyState, Badge, Modal, ErrorNote } from '../components/ui';
 import { formatDate } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
@@ -174,7 +174,7 @@ const ExtraClasses = () => {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       {isLoading ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonTable rows={7} />
       ) : list.length === 0 ? (
         <EmptyState message="No extra classes yet" />
       ) : (

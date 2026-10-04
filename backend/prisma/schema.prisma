@@ -356,6 +356,7 @@ model SchoolClass {
   announcements  Announcement[]
   extraClasses   ExtraClass[]
   assignments    Assignment[]
+  feeStructures  FeeStructure[]
   @@unique([schoolId, name])
   @@index([schoolId, levelId])
   @@map("schoolclass")
@@ -663,6 +664,7 @@ model FeeStructure {
   termId         Int
   term           Term         @relation(fields: [termId], references: [id], onDelete: Cascade)
   classId        Int
+  class          SchoolClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
   name           String       @default("Term fees")
   totalAmount    Decimal      @db.Decimal(12, 2)
 

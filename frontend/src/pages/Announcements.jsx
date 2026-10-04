@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Megaphone } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge, Modal, ErrorNote } from '../components/ui';
+import { PageHeader, EmptyState, Badge, Modal, ErrorNote } from '../components/ui';
 import { formatDate, audienceLabel } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
@@ -53,7 +53,7 @@ const Announcements = () => {
       />
 
       {isLoading ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonTable rows={7} />
       ) : !data || data.announcements.length === 0 ? (
         <EmptyState message="No announcements yet" />
       ) : (

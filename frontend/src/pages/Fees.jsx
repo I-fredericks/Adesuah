@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BellRing, Printer, MessageCircle } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge, Modal, ErrorNote, StatCard } from '../components/ui';
+import { PageHeader, EmptyState, Badge, Modal, ErrorNote, StatCard } from '../components/ui';
 import { formatMoney, formatDate, termLabel, whatsappLink } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
@@ -343,7 +343,7 @@ const Fees = () => {
       )}
 
       {tab === 'Invoices' && (
-        isLoading ? <Spinner className="mx-auto h-8 w-8" /> :
+        isLoading ? <SkeletonTable rows={7} /> :
         !invoicesData || invoicesData.invoices.length === 0 ? <EmptyState message="No invoices — create a fee structure and generate them" /> : (
           <div className="card overflow-x-auto">
             <table className="w-full">

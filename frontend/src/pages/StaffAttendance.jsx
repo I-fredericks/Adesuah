@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, EmptyState, Badge } from '../components/ui';
+import { PageHeader, EmptyState, Badge } from '../components/ui';
 
 const STATUSES = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -68,7 +68,7 @@ const StaffAttendance = () => {
       </div>
 
       {isLoading ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonTable rows={7} />
       ) : !data || data.staff.length === 0 ? (
         <EmptyState message="No active staff" />
       ) : (

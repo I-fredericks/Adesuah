@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const { smsCredentials } = require('../services/smsService');
 const { resolveSchoolId } = require('../middlewares/authMiddleware');
 
 const getMySchool = async (req, res) => {

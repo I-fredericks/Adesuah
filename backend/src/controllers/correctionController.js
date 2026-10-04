@@ -121,8 +121,10 @@ const listCorrections = async (req, res) => {
 // the sanctioned path) and both actions are audit-logged.
 const decideCorrection = async (req, res) => {
   const schoolId = resolveSchoolId(req);
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(404).json({ message: 'Correction request not found' });
   const correction = await prisma.resultCorrection.findFirst({
-    where: { id: Number(req.params.id), schoolId },
+    where: { id, schoolId },
   });
   if (!correction) return res.status(404).json({ message: 'Correction request not found' });
   if (correction.status !== 'PENDING') {

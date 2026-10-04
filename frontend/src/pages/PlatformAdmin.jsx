@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { getErrorMessage } from '../utils/api';
-import { PageHeader, Spinner, StatCard, Badge, Modal, ErrorNote } from '../components/ui';
+import { PageHeader, StatCard, Badge, Modal, ErrorNote } from '../components/ui';
 import { formatDate } from '../utils/format';
 
 const PlatformAdmin = () => {
@@ -62,7 +62,7 @@ const PlatformAdmin = () => {
       )}
 
       {isLoading ? (
-        <Spinner className="mx-auto h-8 w-8" />
+        <SkeletonTable rows={7} />
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full">
