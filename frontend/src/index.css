@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply text-slate-800 antialiased;
+  @apply text-slate-800 antialiased bg-canvas;
 }
 
 @layer components {
@@ -26,7 +26,53 @@ body {
     @apply mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500;
   }
   .card {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+    @apply rounded-xl border border-slate-200/80 bg-white shadow-card;
+  }
+
+  /* Laundry-style refined tables */
+  .table-base thead {
+    @apply bg-slate-50/80 text-left;
+  }
+  .table-base th {
+    @apply px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-200 whitespace-nowrap;
+  }
+  .table-base td {
+    @apply px-4 py-3 border-b border-slate-100 text-slate-700 align-middle;
+  }
+  .table-base tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .table-base tbody tr:hover {
+    @apply bg-slate-50/70;
+  }
+
+  /* Navigation (dark sidebar) */
+  .nav-item {
+    @apply relative flex h-9 items-center gap-3 rounded-lg px-3 text-[13.5px] font-medium text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white;
+  }
+  .nav-item[aria-current='page'] {
+    @apply bg-white/[0.08] text-white;
+  }
+  .nav-item[aria-current='page']::before {
+    content: '';
+    @apply absolute -left-3 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-sun-400;
+  }
+  .nav-item[aria-current='page'] svg {
+    @apply text-sun-400;
+  }
+
+  /* Buttons */
+  .btn-sm {
+    @apply h-8 px-3 text-xs rounded-md gap-1.5;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+  }
+  .btn-danger-ghost {
+    @apply btn text-red-600 hover:bg-red-50;
+  }
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium text-slate-700;
   }
   .th {
     @apply px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;

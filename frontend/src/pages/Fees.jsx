@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BellRing, Printer, MessageCircle } from 'lucide-react';
 import api, { getErrorMessage } from '../utils/api';
 import { PageHeader, Spinner, EmptyState, Badge, Modal, ErrorNote, StatCard } from '../components/ui';
-import { formatMoney, formatDate, termLabel } from '../utils/format';
+import { formatMoney, formatDate, termLabel, whatsappLink } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
 
 const STATUS_TONE = { PAID: 'green', PARTIAL: 'amber', UNPAID: 'red', WAIVED: 'blue' };
@@ -413,6 +413,7 @@ const Fees = () => {
                     <th className="th">Due date</th>
                     <th className="th">Ageing</th>
                     <th className="th">Balance</th>
+                    <th className="th">Reach parent</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -424,6 +425,19 @@ const Fees = () => {
                       <td className="td text-slate-500">{formatDate(inv.dueDate)}</td>
                       <td className="td"><Badge tone={inv.bucket === 'not_due' ? 'blue' : inv.bucket === '60_plus' ? 'red' : 'amber'}>{BUCKET_LABELS[inv.bucket]}</Badge></td>
                       <td className="td font-semibold text-red-600">{formatMoney(inv.balance)}</td>
+                      <td className="td">
+                        <a
+                          href={whatsappLink(
+                            inv.student.guardians?.[0]?.phone,
+                            `Term fees reminder: ${inv.student.firstName} ${inv.student.lastName} (${inv.student.currentClass?.name || ''}) has an outstanding balance of GHS ${inv.balance.toFixed(2)}. Kindly settle at the school office. Thank you.`
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-medium text-emerald-600 hover:underline"
+                        >
+                          WhatsApp
+                        </a>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

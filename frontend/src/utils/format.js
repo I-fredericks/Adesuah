@@ -61,3 +61,14 @@ export const STAFF_ROLE_OPTIONS = [
   'SUPPORT_STAFF',
   'OWNER',
 ];
+
+export const normalizePhone = (phone) => {
+  let d = String(phone || '').replace(/\D/g, '');
+  if (d.startsWith('0') && d.length === 10) d = '233' + d.slice(1);
+  return d ? `+${d}` : null;
+};
+
+export const whatsappLink = (phone, message) => {
+  const n = normalizePhone(phone);
+  return n ? `https://wa.me/${n.replace('+', '')}?text=${encodeURIComponent(message)}` : null;
+};

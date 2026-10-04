@@ -88,7 +88,7 @@ const createAnnouncement = async (req, res) => {
       });
       phones = guardians.map((g) => g.phone);
     }
-    sms = await sendSms(phones, `${title}\n\n${body}`.slice(0, 480));
+    sms = await sendSms(schoolId, phones, `${title}\n\n${body}`.slice(0, 480));
     await prisma.announcement.update({ where: { id: announcement.id }, data: { smsSent: !!sms.sent } });
   }
 

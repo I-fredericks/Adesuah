@@ -56,6 +56,7 @@ model School {
   announcements   Announcement[]
   notifications   Notification[]
   rolePermissions RolePermission[]
+  messageLogs     MessageLog[]
   auditLogs       AuditLog[]
   corrections     ResultCorrection[]
   staffAttendance StaffAttendance[]
@@ -473,6 +474,8 @@ model Student {
   reportCards ReportCard[]
   invoices    Invoice[]
   corrections ResultCorrection[]
+
+  messageLogs   MessageLog[]
 
   @@unique([schoolId, admissionNo])
   @@index([schoolId, status])
@@ -927,4 +930,23 @@ model Assignment {
 
   @@index([schoolId, classId, termId])
   @@map("assignment")
+}
+
+// Every outbound SMS/WhatsApp with delivery status — the message log page.
+model MessageLog {
+  id        Int      @id @default(autoincrement())
+  schoolId  Int
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  channel   String   @default("sms")
+  recipient String
+  studentId Int?
+  student   Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  message   String
+  status    String   @default("logged")
+  response  String?
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, createdAt])
+  @@index([schoolId, status])
+  @@map("messagelog")
 }

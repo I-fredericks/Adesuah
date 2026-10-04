@@ -199,7 +199,7 @@ const remindInvoice = async (schoolId, invoiceId) => {
   const balance = invoiceBalance(invoice);
   const message = `${invoice.term.name.replace('_', ' ')} fees: ${invoice.student.firstName} ${invoice.student.lastName} (${invoice.student.currentClass?.name || 'N/A'}) has an outstanding balance of GHS ${balance.toFixed(2)}. Kindly settle at the school office. Thank you.`;
   const phones = invoice.student.guardians.map((g) => g.phone);
-  const result = await sendSms(phones, message);
+  const result = await sendSms(schoolId, phones, message, { studentId: invoice.student.id });
 
   const guardiansWithAccounts = invoice.student.guardians.filter((g) => g.userId).map((g) => g.userId);
   if (guardiansWithAccounts.length > 0) {

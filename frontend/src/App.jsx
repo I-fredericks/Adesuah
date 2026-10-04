@@ -23,6 +23,7 @@ const StaffAttendance = lazy(() => import('./pages/StaffAttendance'));
 const Salary = lazy(() => import('./pages/Salary'));
 const ExtraClasses = lazy(() => import('./pages/ExtraClasses'));
 const Assignments = lazy(() => import('./pages/Assignments'));
+const Messages = lazy(() => import('./pages/Messages'));
 const Settings = lazy(() => import('./pages/Settings'));
 const PlatformAdmin = lazy(() => import('./pages/PlatformAdmin'));
 const ParentPortal = lazy(() => import('./pages/ParentPortal'));
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/salary" element={<Suspense fallback={<Loading />}><Salary /></Suspense>} />
           <Route path="/extra-classes" element={<Suspense fallback={<Loading />}><ExtraClasses /></Suspense>} />
           <Route path="/assignments" element={<Suspense fallback={<Loading />}><Assignments /></Suspense>} />
+          <Route path="/messages" element={<Suspense fallback={<Loading />}><Messages /></Suspense>} />
           <Route path="/settings" element={<Suspense fallback={<Loading />}><Settings /></Suspense>} />
           <Route path="/platform" element={<Suspense fallback={<Loading />}><PlatformAdmin /></Suspense>} />
           <Route path="/portal" element={<Suspense fallback={<Loading />}><ParentPortal /></Suspense>} />

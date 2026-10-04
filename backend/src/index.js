@@ -104,6 +104,7 @@ app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/portal', require('./routes/portalRoutes'));
 app.use('/api/operations', require('./routes/operationsRoutes'));
 app.use('/api', require('./routes/operations2Routes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
 
 const distPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(distPath, {

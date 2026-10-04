@@ -72,7 +72,7 @@ const runFeeReminders = async (schoolId, { termId, dryRun } = {}) => {
     const message = `${invoice.term.name.replace('_', ' ')} fees for ${invoice.student.firstName} ${invoice.student.lastName}: outstanding balance GHS ${balance.toFixed(2)} ${urgency}. Kindly settle at the school office. Thank you.`;
 
     const phones = invoice.student.guardians.map((g) => g.phone);
-    const result = await sendSms(phones, message);
+    const result = await sendSms(schoolId, phones, message, { studentId: invoice.student.id });
     if (result.sent || result.reason === 'not_configured') sent += 1;
 
     const guardianUsers = invoice.student.guardians.filter((g) => g.userId).map((g) => g.userId);

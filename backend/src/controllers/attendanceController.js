@@ -70,7 +70,7 @@ const markAttendance = async (req, res) => {
 
     for (const student of absentStudents) {
       const message = `Attendance notice: ${student.firstName} ${student.lastName} (${student.currentClass?.name || 'school'}) was marked ABSENT today, ${date}. If this is unexpected please contact the school.`;
-      sendSms(student.guardians.map((g) => g.phone), message);
+      sendSms(schoolId, student.guardians.map((g) => g.phone), message, { studentId: student.id });
       const guardianUsers = student.guardians.filter((g) => g.userId).map((g) => g.userId);
       if (guardianUsers.length > 0) {
         notifyUsers({
