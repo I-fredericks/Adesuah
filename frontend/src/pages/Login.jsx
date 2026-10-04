@@ -27,7 +27,7 @@ const Login = () => {
   return (
     <div className="flex min-h-screen">
       {/* Brand panel */}
-      <div className="relative hidden w-[46%] flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-800 via-brand-600 to-brand-500 p-12 text-white lg:flex">
+      <div className="relative hidden w-[46%] flex-col justify-between overflow-hidden bg-gradient-to-br from-navy-900 via-brand-700 to-brand-500 p-12 text-white lg:flex">
         <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-black/10 blur-2xl" />
         <Link to="/" className="flex items-center gap-3">

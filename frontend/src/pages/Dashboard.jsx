@@ -35,7 +35,7 @@ const Dashboard = () => {
       />
 
       {/* Hero */}
-      <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-800 via-brand-600 to-brand-500 p-6 text-white lg:p-8">
+      <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-navy-900 via-brand-700 to-brand-500 p-6 text-white shadow-pop lg:p-8">
         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -44,6 +44,21 @@ const Dashboard = () => {
             <p className="mt-1 text-sm text-brand-100">
               {data.students.active} pupils · {data.classCount} classes · {data.staffCount} staff
             </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                { to: '/attendance', label: 'Mark attendance' },
+                { to: '/scores', label: 'Enter scores' },
+                { to: '/fees', label: 'Record a payment' },
+              ].map((a) => (
+                <Link
+                  key={a.to}
+                  to={a.to}
+                  className="rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                >
+                  {a.label}
+                </Link>
+              ))}
+            </div>
           </div>
           {sections.finances && (
             <div className="rounded-xl bg-white/10 p-4 backdrop-blur">

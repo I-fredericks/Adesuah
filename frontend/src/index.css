@@ -2,51 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Base ── */
+html {
+  scroll-behavior: smooth;
+}
 body {
-  @apply text-slate-800 antialiased bg-canvas;
+  @apply bg-canvas font-sans text-slate-800 antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+::selection {
+  @apply bg-brand-500/20;
+}
+
+/* Subtle scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.4) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.4);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @layer components {
+  /* ── Buttons ── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex h-10 cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-semibold
+      transition-[background-color,border-color,color,box-shadow] duration-150
+      focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20
+      disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+    @apply btn bg-brand-500 text-white shadow-[0_1px_2px_rgb(29_99_237/0.35),inset_0_1px_0_rgb(255_255_255/0.15)] hover:bg-brand-600;
   }
   .btn-secondary {
-    @apply btn bg-white border border-slate-300 text-slate-700 hover:bg-slate-50;
+    @apply btn border border-slate-200 bg-white text-slate-700 shadow-[0_1px_2px_rgb(15_23_42/0.04)] hover:border-slate-300 hover:bg-slate-50;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100 hover:text-slate-900;
   }
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700;
+    @apply btn bg-red-600 text-white shadow-[0_1px_2px_rgb(220_38_38/0.3)] hover:bg-red-700;
   }
+  .btn-danger-ghost {
+    @apply btn text-red-600 hover:bg-red-50;
+  }
+  .btn-sm {
+    @apply h-8 gap-1.5 rounded-md px-3 text-xs;
+  }
+
+  /* ── Form controls ── */
   .input {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
+    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-[0_1px_1px_rgb(15_23_42/0.03)]
+      placeholder:text-slate-400 transition-colors
+      hover:border-slate-300 focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-500/10
+      disabled:bg-slate-50 disabled:text-slate-400;
+  }
+  textarea.input {
+    @apply h-auto leading-relaxed;
+  }
+  select.input {
+    @apply cursor-pointer appearance-none pr-8 bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2394a3b8'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z'/%3E%3C/svg%3E");
+    background-position: right 0.6rem center;
+    background-size: 1rem;
   }
   .label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500;
+    @apply mb-1.5 block text-[13px] font-medium text-slate-700;
   }
+  .hint {
+    @apply mt-1.5 block text-xs text-slate-500;
+  }
+
+  /* ── Surfaces ── */
   .card {
     @apply rounded-xl border border-slate-200/80 bg-white shadow-card;
   }
 
-  /* Laundry-style refined tables */
-  .table-base thead {
-    @apply bg-slate-50/80 text-left;
+  /* ── Tables ── */
+  .th {
+    @apply whitespace-nowrap border-b border-slate-200 px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500;
   }
-  .table-base th {
-    @apply px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-200 whitespace-nowrap;
+  .td {
+    @apply border-b border-slate-100 px-4 py-3 align-middle text-slate-700;
   }
-  .table-base td {
-    @apply px-4 py-3 border-b border-slate-100 text-slate-700 align-middle;
+  tbody tr {
+    @apply transition-colors;
   }
-  .table-base tbody tr:last-child td {
-    @apply border-b-0;
-  }
-  .table-base tbody tr:hover {
+  tbody tr:hover {
     @apply bg-slate-50/70;
   }
+  tbody tr:last-child td {
+    @apply border-b-0;
+  }
 
-  /* Navigation (dark sidebar) */
+  /* ── Navigation (dark sidebar) ── */
   .nav-item {
     @apply relative flex h-9 items-center gap-3 rounded-lg px-3 text-[13.5px] font-medium text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white;
   }
@@ -60,28 +117,9 @@ body {
   .nav-item[aria-current='page'] svg {
     @apply text-sun-400;
   }
-
-  /* Buttons */
-  .btn-sm {
-    @apply h-8 px-3 text-xs rounded-md gap-1.5;
-  }
-  .btn-ghost {
-    @apply btn text-slate-600 hover:bg-slate-100 hover:text-slate-900;
-  }
-  .btn-danger-ghost {
-    @apply btn text-red-600 hover:bg-red-50;
-  }
-  .label {
-    @apply mb-1.5 block text-[13px] font-medium text-slate-700;
-  }
-  .th {
-    @apply px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
-  }
-  .td {
-    @apply px-4 py-2.5 text-sm;
-  }
 }
 
+/* ── Print ── */
 @media print {
   /* Hide the app shell so printed reports/statements come out clean */
   aside,
@@ -101,6 +139,10 @@ body {
     border: none !important;
     max-width: 100% !important;
     padding: 0 !important;
+  }
+  .card {
+    border: 0 !important;
+    box-shadow: none !important;
   }
   body {
     background: white !important;
